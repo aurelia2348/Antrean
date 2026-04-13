@@ -1,0 +1,61 @@
+body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background-color: #f8f9fa;
+}
+
+.stage-card {
+    transition: all 0.2s ease-in-out;
+}
+
+.stage-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.10)!important;
+}
+
+.log-panel {
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.85rem;
+    overflow-y: auto;
+    max-height: 600px;
+}
+
+.log-entry {
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding: 8px 0;
+    line-height: 1.4;
+}
+
+.log-time {
+    color: #1abc9c;
+    margin-right: 8px;
+    font-weight: bold;
+}
+
+.queue-badge {
+    font-size: 1.15rem;
+    padding: 0.5em 0.8em;
+    margin: 4px;
+}
+
+.active-stage {
+    border: 2px solid #0d6efd !important;
+    background-color: #f1f7ff !important;
+}
+
+.empty-state {
+    color: #adb5bd;
+    font-style: italic;
+    font-size: 0.9rem;
+}
+
+.min-h-100 {
+    min-height: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.min-h-queue {
+    min-height: 45px;
+    align-items: center;
+}
