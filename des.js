@@ -469,7 +469,7 @@ function renderDESResults(metrics) {
         if (cReasons.length > 0 || rhoReasons.length > 0) {
             warnDiv.classList.remove('d-none');
             let txt = 'Berdasarkan parameter dasar sistem simulasi ini:<br><ul class="mb-0 mt-2">';
-            
+
             if (cReasons.length > 0) {
                 txt += `<li class="mb-2"><strong>CA / CS > 1:</strong> Ditemukan pada ${cReasons.join(", ")}. Ini menandakan laju kedatangan tipe pasien dan waktu penanganan tergolong fluktuatif/bervariasi, sehingga rentan memicu ketidakpastian antrean.</li>`;
             }
@@ -492,7 +492,24 @@ function resetDES() {
     document.getElementById('desReps').value = 200;
     document.getElementById('desWarmup').value = 10;
     document.getElementById('desObs').value = 30;
+    
+    let quotaEl = document.getElementById('desQuota');
+    if (quotaEl) quotaEl.value = 0;
+    
+    for (let i = 1; i <= 4; i++) {
+        let srv = document.getElementById('srv' + i);
+        if (srv) srv.value = 1;
+    }
+
+    let pl = document.getElementById('desPlaceholder');
+    if (pl) {
+        pl.classList.remove('d-none');
+        pl.classList.add('d-flex');
+    }
+    
     document.getElementById('desResultsContainer').classList.add('d-none');
+    let btm = document.getElementById('desBottomContainer');
+    if (btm) btm.classList.add('d-none');
 }
 
 document.addEventListener('DOMContentLoaded', () => {

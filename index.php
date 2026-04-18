@@ -3,45 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Queue Simulation</title>
+    <title>QueueFlow Pro - Simulation Dashboard</title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <!-- Custom CSS -->
     <link href="style.css" rel="stylesheet">
 </head>
-<body class="bg-light">
+<body class="bg-app">
 
-<div class="container py-5">
-    <div class="text-center mb-5">
-        <h1 class="display-5 fw-bold text-dark">Simulation Dashboard</h1>
-        <p class="lead text-muted">Web-based Multi-stage Queue System</p>
-        <button id="btnAddUser" class="btn btn-primary btn-lg mt-3 shadow-sm px-5">➕ Tambah Antrian</button>
-        <button id="btnEndSim" class="btn btn-danger btn-lg mt-3 ms-2 shadow-sm px-4">🛑 Akhiri Simulasi</button>
-        <a href="history.php" class="btn btn-outline-secondary btn-lg mt-3 ms-2 shadow-sm">📊 Lihat Riwayat Terpisah</a>
-    </div>
+<div class="d-flex vw-100 vh-100 overflow-hidden">
+    
+    <!-- Sidebar -->
+    <aside class="sidebar bg-white border-end d-flex flex-column flex-shrink-0">
+        <!-- Brand -->
+        <div class="p-4 d-flex align-items-center gap-3">
+            <div class="brand-icon bg-primary text-white rounded d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                <i class="bi bi-bar-chart-fill" style="font-size: 1rem;"></i>
+            </div>
+            <h5 class="fw-bold mb-0 text-dark">QueueFlow<br>Pro</h5>
+        </div>
 
-    <div class="row gx-4">
-        <!-- Simulation Area -->
-        <div class="col-lg-8">
-            <div id="stages-container">
+        <!-- System Status -->
+        <div class="px-4 py-3 mx-2 bg-light-subtle rounded-3 mb-4 d-flex align-items-center gap-3">
+            <div class="status-icon bg-primary-subtle text-primary rounded d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                <i class="bi bi-cpu"></i>
+            </div>
+            <div>
+                <small class="text-uppercase text-secondary fw-bold" style="font-size: 0.65rem; letter-spacing: 0.5px;">SYSTEM ARCHITECT</small>
+                <div class="fw-bold text-dark" style="font-size: 0.85rem;">Simulation Engine</div>
+                <div class="text-primary fw-semibold" style="font-size: 0.7rem;">v2.4 Active</div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="nav flex-column gap-2 px-3 fw-semibold">
+            <a href="#" class="nav-link active rounded-1 d-flex align-items-center gap-3 py-3 px-3">
+                <i class="bi bi-grid-1x2-fill"></i> DASHBOARD
+            </a>
+            <a href="history.php" class="nav-link text-secondary rounded-1 d-flex align-items-center gap-3 py-3 px-3">
+                <i class="bi bi-clock-history"></i> HISTORY
+            </a>
+            <a href="#" class="nav-link text-secondary rounded-1 d-flex align-items-center gap-3 py-3 px-3">
+                <i class="bi bi-bar-chart-line-fill"></i> ANALYSIS
+            </a>
+        </nav>
+
+        <!-- Spacer -->
+        <div class="mt-auto border-top mx-3 mb-3 pt-3">
+            <a href="#" class="nav-link text-secondary rounded-1 d-flex align-items-center gap-3 px-3 py-2 fw-semibold">
+                <i class="bi bi-gear-fill"></i> SETTINGS
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="d-flex flex-column flex-grow-1 overflow-hidden">
+        
+        <!-- Header -->
+        <header class="top-header border-bottom bg-white d-flex align-items-center justify-content-between px-4" style="height: 70px;">
+            <div class="text-secondary fw-medium" style="font-size: 0.95rem;">
+                Simulation Dashboard - Web-based Multi-stage Queue System
+            </div>
+            <div class="d-flex gap-3 h-100 py-2">
+                <a href="history.php" class="btn btn-light text-secondary fw-bold border-0 d-flex align-items-center gap-2 px-4 shadow-sm h-100 icon-link-hover">
+                    <i class="bi bi-clock-history"></i> Lihat Riwayat<br>Terpisah
+                </a>
+                <button id="btnEndSim" class="btn btn-danger fw-bold d-flex align-items-center gap-2 px-4 shadow-sm border-0 h-100 rounded-1">
+                    <i class="bi bi-stop-circle-fill"></i> Akhiri<br>Simulasi
+                </button>
+                <button id="btnAddUser" class="btn btn-primary fw-bold d-flex align-items-center gap-2 px-4 shadow-sm border-0 h-100 rounded-1">
+                    <i class="bi bi-plus-circle-fill"></i> Tambah<br>Antrian
+                </button>
+            </div>
+        </header>
+
+        <!-- Content Area -->
+        <div class="d-flex flex-grow-1 p-4 gap-4 overflow-hidden align-items-start">
+            
+            <!-- Stages List -->
+            <div class="stages-column flex-grow-1 h-100 overflow-auto pe-2" id="stages-container">
                 <!-- Stages will be generated by JS -->
             </div>
-        </div>
 
-        <!-- Log Panel -->
-        <div class="col-lg-4">
-            <div class="card shadow-sm border-0 bg-dark text-white h-100 rounded-4" style="min-height: 600px;">
-                <div class="card-header border-secondary bg-dark pt-4 pb-3">
-                    <h5 class="mb-0 fw-bold d-flex align-items-center">
-                        <span class="me-2">📝</span> Activity Log
-                    </h5>
+            <!-- Activity Log -->
+            <div class="log-column flex-shrink-0 h-100 position-relative" style="width: 360px;">
+                <div class="card bg-dark-panel text-white h-100 border-0 shadow-lg rounded-4 overflow-hidden">
+                    
+                    <!-- Mac Window Controls -->
+                    <div class="window-controls d-flex align-items-center px-4 py-3 gap-2 border-bottom border-secondary border-opacity-25">
+                        <div class="mac-dot bg-danger"></div>
+                        <div class="mac-dot bg-warning"></div>
+                        <div class="mac-dot bg-success"></div>
+                        <span class="ms-3 text-secondary text-uppercase fw-bold" style="font-size: 0.65rem; letter-spacing: 2px;">Activity Log</span>
+                    </div>
+
+                    <!-- Log Output -->
+                    <div class="card-body log-panel custom-scrollbar p-4" id="logPanel">
+                        <!-- Logs will appear here -->
+                        <div class="log-entry text-secondary p-0 border-0 mb-2">
+                            <span class="fst-italic">_ Listening for system events...</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body log-panel" id="logPanel">
-                    <div class="text-secondary small">Simulation started... Waiting for actions.</div>
-                </div>
+
+                <!-- Floating Action Button -->
+                <button id="fabAddUser" class="btn btn-primary fab-btn position-absolute shadow-lg d-flex align-items-center justify-content-center" style="width: 56px; height: 56px; border-radius: 16px; bottom: -10px; right: -10px; z-index: 10;">
+                    <i class="bi bi-plus-lg fs-4"></i>
+                </button>
             </div>
+            
         </div>
-    </div>
+    </main>
 </div>
 
 <!-- Scripts -->

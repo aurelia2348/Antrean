@@ -18,53 +18,62 @@ class QueueSimulation {
         this.loadSessionId();
     }
 
+    getStageName(i) {
+        const names = ["Arrival & Screening", "Documentation", "Verification", "Approval"];
+        return names[i - 1] || "Stage";
+    }
+
     initUI() {
+        this.stagesContainer.innerHTML = '';
         for (let i = 1; i <= this.totalStages; i++) {
             const card = document.createElement('div');
-            card.className = 'card shadow-sm border-0 rounded-4 mb-4 stage-card';
+            card.className = 'card border-0 shadow-sm rounded-4 mb-4 stage-card position-relative overflow-hidden bg-white';
             card.innerHTML = `
-                <div class="card-header bg-white pt-3 pb-2 border-0">
-                    <h5 class="fw-bold text-primary mb-0">Tahap ${i}</h5>
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-center px-4 pt-4 pb-3">
+                    <h6 class="fw-bold mb-0 text-dark">Tahap ${i}: ${this.getStageName(i)}</h6>
+                    <span id="badge-status-${i}" class="badge rounded-pill bg-secondary text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.5px;">IDLE</span>
                 </div>
-                <div class="card-body bg-white border-top rounded-bottom-4 pt-4">
-                    <div class="row align-items-center">
-                        <!-- Queue State -->
-                        <div class="col-md-5">
-                            <div class="p-3 bg-light rounded-3 shadow-sm text-center min-h-100">
-                                <h6 class="text-secondary fw-bold mb-3 text-uppercase" style="letter-spacing: 1px; font-size: 0.8rem;">Queue ${i}</h6>
-                                <div id="queue-display-${i}" class="d-flex flex-wrap justify-content-center min-h-queue">
-                                    <span class="empty-state">[]</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Actions -->
-                        <div class="col-md-2 text-center my-3 my-md-0 d-flex flex-column justify-content-center">
-                            <div class="d-grid gap-2">
 
-                                ${i < 4 ? `
-                                <button id="btn-lanjut-${i}" class="btn btn-sm btn-primary fw-bold text-nowrap rounded-pill shadow-sm py-2" onclick="sim.leaveStage(${i}, true)">
-                                    Lanjut ➔
-                                </button>
-                                ` : ''}
-                                ${i > 1 ? `
-                                <button id="btn-keluar-${i}" class="btn btn-sm btn-danger fw-bold text-nowrap rounded-pill shadow-sm py-2" onclick="sim.leaveStage(${i}, false)">
-                                    Keluar 🛑
-                                </button>
-                                ` : ''}
-                            </div>
-                        </div>
-                        
-                        <!-- Stage State -->
-                        <div class="col-md-5">
-                            <div class="p-3 bg-light rounded-3 shadow-sm text-center min-h-100 transition-all border" id="stage-box-${i}">
-                                <h6 class="text-secondary fw-bold mb-3 text-uppercase" style="letter-spacing: 1px; font-size: 0.8rem;">Stage ${i}</h6>
-                                <div id="stage-display-${i}" class="d-flex flex-wrap justify-content-center min-h-queue">
-                                    <span class="empty-state">[]</span>
-                                </div>
+                <!-- Body -->
+                <div class="row px-4 pb-3 gx-3">
+                    <!-- Queue Box -->
+                    <div class="col-6">
+                        <div class="metric-box">
+                            <div class="metric-label">QUEUE</div>
+                            <div id="queue-display-${i}" class="metric-value-queue d-flex flex-wrap justify-content-center align-items-center" style="min-height: 48px;">
+                                <span class="text-secondary opacity-25">-</span>
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- Stage Box -->
+                    <div class="col-6">
+                        <div id="stage-box-${i}" class="metric-box transition-all">
+                            <div class="metric-label">STAGE</div>
+                            <div id="stage-display-${i}" class="metric-value-stage d-flex flex-wrap justify-content-center align-items-center" style="min-height: 48px;">
+                                <span class="text-secondary opacity-25">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Buttons -->
+                <div class="row px-4 pb-4 gx-3">
+                    ${i > 1 ? `
+                    <div class="col-${i === 4 ? '12' : '6'}">
+                        <button id="btn-keluar-${i}" class="btn btn-light w-100 fw-bold text-secondary text-uppercase py-2 shadow-sm" style="font-size: 0.85rem;" onclick="sim.leaveStage(${i}, false)">
+                            Keluar
+                        </button>
+                    </div>
+                    ` : ''}
+                    ${i < 4 ? `
+                    <div class="col-${i === 1 ? '12' : '6'}">
+                        <button id="btn-lanjut-${i}" class="btn btn-primary w-100 fw-bold text-uppercase py-2 shadow-sm" style="font-size: 0.85rem;" onclick="sim.leaveStage(${i}, true)">
+                            Lanjut
+                        </button>
+                    </div>
+                    ` : ''}
                 </div>
             `;
             this.stagesContainer.appendChild(card);
@@ -74,6 +83,9 @@ class QueueSimulation {
 
     bindEvents() {
         document.getElementById('btnAddUser').addEventListener('click', () => this.addUser());
+        const fab = document.getElementById('fabAddUser');
+        if (fab) fab.addEventListener('click', () => this.addUser());
+        
         const endBtn = document.getElementById('btnEndSim');
         if (endBtn) endBtn.addEventListener('click', () => this.resetSimulation());
     }
@@ -134,7 +146,7 @@ class QueueSimulation {
         this.recordTime(userId, 1, 'masuk_queue');
         this.queues[1].push(userId);
 
-        this.addLog(`Pasien ${userId} masuk Queue 1`, 'info');
+        this.addLog(`Antrian baru ditambahkan ke Tahap 1. (Entitas #${userId})`, 'event');
 
         // Otomatis tarik ke stage 1 jika kosong
         this.enterStage(1);
@@ -162,7 +174,7 @@ class QueueSimulation {
         this.stages[stageNum] = userId;
 
         this.recordTime(userId, stageNum, 'masuk_stage');
-        this.addLog(`Pasien ${userId} masuk Stage ${stageNum}`, 'success');
+        this.addLog(`Tarik antrian: Entitas #${userId} mulai diproses di Tahap ${stageNum}.`, 'info');
         this.render();
     }
 
@@ -178,16 +190,16 @@ class QueueSimulation {
             let nextStage = stageNum + 1;
             this.recordTime(userId, nextStage, 'masuk_queue');
             this.queues[nextStage].push(userId);
-            this.addLog(`Pasien ${userId} lanjut dari Stage ${stageNum} ke Queue ${nextStage}`, 'warning');
+            this.addLog(`Entitas #${userId} berpindah Tahap ${stageNum} \u2192 Tahap ${nextStage}.`, 'info');
 
             // Otomatis masuk tahap selanjutnya
             this.enterStage(nextStage);
         } else {
             // Patient finished or dropped out
             this.historyData[userId].selesai = Date.now();
-            let msg = (stageNum === this.totalStages) ? `keluar Stage ${this.totalStages} dan Selesai! 🎉` : `keluar di Stage ${stageNum} (Tidak Lanjut)`;
-            let color = (stageNum === this.totalStages) ? 'primary' : 'danger';
-            this.addLog(`Pasien ${userId} ${msg}`, color);
+            let msg = (stageNum === this.totalStages && isLanjut) ? `selesai seluruh tahapan dan keluar sistem.` : `keluar sistem pada Tahap ${stageNum}.`;
+            let color = (stageNum === this.totalStages && isLanjut) ? 'success' : 'warn';
+            this.addLog(`Sistem: Entitas #${userId} ${msg}`, color);
             this.saveUser(userId);
         }
 
@@ -197,26 +209,54 @@ class QueueSimulation {
         this.render();
     }
 
-    addLog(msg, colorType = 'light') {
+    addLog(msg, type = 'info') {
         const date = new Date();
         const time = date.toLocaleTimeString('id-ID', { hour12: false });
 
+        let typeLabel = 'INFO';
+        let colorClass = 'log-type-info';
+
+        if (type === 'event' || type === 'primary') { typeLabel = 'EVENT'; colorClass = 'log-type-event'; }
+        else if (type === 'warn' || type === 'danger') { typeLabel = 'WARN'; colorClass = 'log-type-warn'; }
+        else if (type === 'success') { typeLabel = 'INFO'; colorClass = 'log-type-info'; }
+
         const div = document.createElement('div');
-        div.className = `log-entry text-${colorType}`;
-        div.innerHTML = `<span class="log-time">[${time}]</span> ${msg}`;
+        div.className = `log-entry d-flex gap-3`;
+        div.innerHTML = `
+            <div class="log-time">[${time}]</div>
+            <div class="${colorClass}" style="width: 45px; flex-shrink: 0;">${typeLabel}:</div>
+            <div class="text-white opacity-75 flex-grow-1">${msg}</div>
+        `;
 
         this.logPanel.appendChild(div);
         this.logPanel.scrollTop = this.logPanel.scrollHeight;
     }
 
+    padStr(num) {
+        return num.toString().padStart(2, '0');
+    }
+
     render() {
         for (let i = 1; i <= this.totalStages; i++) {
+            const badgeStatusEl = document.getElementById(`badge-status-${i}`);
+            let status = 'IDLE';
+            let badgeClass = 'bg-secondary bg-opacity-10 text-secondary';
+
             // Render Queue
             const qEl = document.getElementById(`queue-display-${i}`);
             if (this.queues[i].length === 0) {
-                qEl.innerHTML = `<span class="empty-state">[]</span>`;
+                qEl.innerHTML = `<span class="text-secondary opacity-25">-</span>`;
             } else {
-                qEl.innerHTML = this.queues[i].map(id => `<span class="badge bg-secondary queue-badge shadow-sm">${id}</span>`).join('');
+                status = 'PENDING';
+                badgeClass = 'bg-warning bg-opacity-10 text-warning';
+                
+                // If only 1 person in queue, show huge padded number.
+                // Else, show badges.
+                if (this.queues[i].length === 1) {
+                    qEl.innerHTML = `<span>${this.padStr(this.queues[i][0])}</span>`;
+                } else {
+                    qEl.innerHTML = this.queues[i].map(id => `<span class="badge bg-primary bg-opacity-10 text-primary queue-badge">${this.padStr(id)}</span>`).join('');
+                }
             }
 
             // Render Stage
@@ -224,18 +264,23 @@ class QueueSimulation {
             const sBox = document.getElementById(`stage-box-${i}`);
 
             if (this.stages[i] === null) {
-                sEl.innerHTML = `<span class="empty-state">[]</span>`;
+                sEl.innerHTML = `<span class="text-secondary opacity-25">-</span>`;
                 sBox.classList.remove('active-stage');
             } else {
-                sEl.innerHTML = `<span class="badge bg-primary queue-badge px-3 py-2 border border-2 border-white shadow">${this.stages[i]}</span>`;
+                status = i === 1 ? 'PROCESSING' : 'ACTIVE';
+                badgeClass = i === 1 ? 'bg-primary bg-opacity-10 text-primary' : 'bg-success bg-opacity-10 text-success';
+                sEl.innerHTML = `<span>${this.padStr(this.stages[i])}</span>`;
                 sBox.classList.add('active-stage');
             }
+
+            // Update badge status
+            badgeStatusEl.className = `badge rounded-pill ${badgeClass}`;
+            badgeStatusEl.innerText = status;
 
             // Buttons state
             const btnKeluar = document.getElementById(`btn-keluar-${i}`);
             const btnLanjut = document.getElementById(`btn-lanjut-${i}`);
 
-            // Lanjut / Keluar = Stage is not empty
             let stageEmpty = (this.stages[i] === null);
             if (btnKeluar) btnKeluar.disabled = stageEmpty;
             if (btnLanjut) btnLanjut.disabled = stageEmpty;
