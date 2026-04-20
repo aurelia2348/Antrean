@@ -1,61 +1,177 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
 body {
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-    background-color: #f8f9fa;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: #334155;
 }
 
+.bg-app {
+    background-color: #f4f6f8; /* Soft light gray for main background */
+}
+
+/* Sidebar and Navigation */
+.sidebar {
+    width: 260px;
+    background-color: #f8fafc;
+}
+
+.nav-link {
+    color: #64748b;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+    background-color: #f1f5f9;
+    color: #0f172a;
+}
+
+.nav-link.active {
+    background-color: #eff6ff !important;
+    color: #0d6efd !important;
+    position: relative;
+}
+
+.nav-link.active::before {
+    content: '';
+    position: absolute;
+    left: -1rem; /* Depends on px-3 padding, tweak if needed */
+    top: 50%;
+    transform: translateY(-50%);
+    height: 60%;
+    width: 4px;
+    background-color: #0d6efd;
+    border-radius: 0 4px 4px 0;
+}
+
+/* Top Header Buttons */
+.icon-link-hover:hover {
+    background-color: #e2e8f0 !important;
+}
+
+/* Stage Cards Layout */
 .stage-card {
     transition: all 0.2s ease-in-out;
+    border-left: 4px solid #0d6efd !important; /* The blue line on the left */
 }
 
 .stage-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 .5rem 1rem rgba(0,0,0,.10)!important;
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.08)!important;
 }
 
-.log-panel {
-    font-family: 'Consolas', 'Monaco', monospace;
-    font-size: 0.85rem;
-    overflow-y: auto;
-    max-height: 600px;
-}
-
-.log-entry {
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-    padding: 8px 0;
-    line-height: 1.4;
-}
-
-.log-time {
-    color: #1abc9c;
-    margin-right: 8px;
-    font-weight: bold;
-}
-
-.queue-badge {
-    font-size: 1.15rem;
-    padding: 0.5em 0.8em;
-    margin: 4px;
-}
-
-.active-stage {
-    border: 2px solid #0d6efd !important;
-    background-color: #f1f7ff !important;
-}
-
-.empty-state {
-    color: #adb5bd;
-    font-style: italic;
-    font-size: 0.9rem;
-}
-
-.min-h-100 {
-    min-height: 100px;
+/* Sub-boxes for Queue and Stage inside cards */
+.metric-box {
+    background-color: #f8fafc;
+    border-radius: 0.5rem;
+    padding: 1.5rem 1rem;
+    text-align: center;
+    height: 100%;
     display: flex;
     flex-direction: column;
     justify-content: center;
 }
 
-.min-h-queue {
-    min-height: 45px;
-    align-items: center;
+.metric-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: #94a3b8;
+    margin-bottom: 0.75rem;
+}
+
+/* The big numbers inside the queues */
+.metric-value-queue {
+    font-size: 3rem;
+    font-weight: 800;
+    color: #0d6efd;
+    line-height: 1;
+}
+
+.metric-value-stage {
+    font-size: 3rem;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1;
+}
+
+/* Activity Log Panel */
+.bg-dark-panel {
+    background-color: #0a0a14;
+}
+
+.mac-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.log-panel {
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.8rem;
+    overflow-y: auto;
+}
+
+.log-entry {
+    line-height: 1.6;
+    margin-bottom: 0.5rem;
+}
+
+.log-time {
+    color: #64748b;
+    margin-right: 8px;
+}
+
+.log-type-info { color: #10b981; }  /* Green */
+.log-type-event { color: #3b82f6; } /* Blue */
+.log-type-warn { color: #f59e0b; }  /* Yellow */
+.log-type-error { color: #ef4444; } /* Red */
+
+/* Styling for original queue badges if there are multiple patients */
+.queue-badge {
+    font-size: 1rem;
+    padding: 0.4em 0.7em;
+    margin: 4px;
+    border-radius: 0.5rem;
+}
+
+.active-stage {
+    border: 2px solid #0f172a !important; /* Update highlighting */
+}
+
+/* Custom Scrollbar for sleek UI */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.stages-column::-webkit-scrollbar {
+    width: 6px;
+}
+.stages-column::-webkit-scrollbar-track {
+    background: transparent;
+}
+.stages-column::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+.stages-column::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+.fab-btn {
+    transition: transform 0.2s;
+}
+.fab-btn:hover {
+    transform: scale(1.05);
 }

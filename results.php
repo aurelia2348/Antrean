@@ -24,7 +24,7 @@ if (file_exists($file)) {
 }
 
 function formatDuration($ms) {
-    if ($ms == -1) return 'Tidak Lanjut';
+    if ($ms == -1) return 'NR';
     if ($ms <= 0) return '00:00:00';
     $totalSeconds = round($ms / 1000);
     $hours = floor($totalSeconds / 3600);
@@ -63,7 +63,7 @@ function getStageEntryTime($user, $stageNum) {
 
 function calculateStageSpecificInterarrival($data, $currentIndex, $stageNum) {
     $currEntry = getStageEntryTime($data[$currentIndex], $stageNum);
-    if ($currEntry == -1) return 'Tidak Lanjut';
+    if ($currEntry == -1) return -1;
     
     $nextEntry = -1;
     for ($j = $currentIndex + 1; $j < count($data); $j++) {
@@ -75,11 +75,10 @@ function calculateStageSpecificInterarrival($data, $currentIndex, $stageNum) {
     }
     
     if ($nextEntry != -1) {
-        $diff = max(0, $nextEntry - $currEntry);
-        return formatDuration($diff);
+        return max(0, $nextEntry - $currEntry);
     }
     
-    return formatDuration(0);
+    return 0;
 }
 
 function getArrivalTime($user) {
@@ -93,7 +92,7 @@ function getArrivalTime($user) {
 
 function formatTimestamp($ms) {
     if ($ms == 0) return '-';
-    return date('H.i.s', (int)($ms / 1000));
+    return date('H:i:s', (int)($ms / 1000));
 }
 
 function getTotalTime($user) {
@@ -110,6 +109,31 @@ function getTotalTime($user) {
     }
     return 0;
 }
+
+// Calculate Summary Metrics
+$totalPatients = count($data);
+$simMin = PHP_INT_MAX;
+$simMax = 0;
+
+foreach ($data as $user) {
+    if (isset($user['history'])) {
+        foreach ($user['history'] as $h) {
+            if ($h['stage'] == 1 && isset($h['masuk_queue'])) {
+                $simMin = min($simMin, $h['masuk_queue']);
+            }
+            if ($h['stage'] == 4 && isset($h['keluar_stage'])) {
+                $simMax = max($simMax, $h['keluar_stage']);
+            }
+        }
+    }
+}
+$simTimeStr = '00h 00m';
+if ($simMax > $simMin && $simMin !== PHP_INT_MAX) {
+    $diffSec = round(($simMax - $simMin) / 1000);
+    $h = floor($diffSec / 3600);
+    $m = floor(($diffSec % 3600) / 60);
+    $simTimeStr = sprintf('%02dh %02dm', $h, $m);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -119,415 +143,489 @@ function getTotalTime($user) {
     <title>Report - Queue Simulation</title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background-color: #f8f9fa; }
-        .table-custom th { background-color: #2c3e50; color: white; border-color: #34495e; font-weight: 600; }
-        .table-custom td { vertical-align: middle; }
+        body { font-family: 'Inter', system-ui, sans-serif; background-color: #eff6ff; color: #1e293b; }
+        .table-custom th { color: white; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.5px; border-color: rgba(255,255,255,0.1); }
+        .table-custom td { vertical-align: middle; color: #334155; font-size: 0.9rem; padding: 1rem 0.75rem; border-color: #f1f5f9; }
+        .report-card { border-radius: 12px; background: white; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); border: none; }
+        .text-purple { color: #8b5cf6 !important; }
+        .text-warning-red { color: #ef4444 !important; } /* Simulated warnings for high times */
     </style>
 </head>
 <body class="bg-light">
 
-<div class="container py-5">
-    <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+<div class="container-fluid py-5 px-md-5" style="max-width: 1400px; background-color: #f8fafc;">
+    
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-start mb-5">
         <div>
-            <h2 class="fw-bold mb-0">Hasil Simulasi (Vaksinasi #<?php echo isset($targetSession) ? $targetSession : 1; ?>)</h2>
-            <p class="text-muted mb-0">Data ini difilter spesifik untuk batch sesi ini.</p>
+            <div class="text-uppercase fw-bold text-secondary mb-2" style="font-size: 0.7rem; letter-spacing: 1.5px;">REPORTS <i class="bi bi-chevron-right mx-1"></i> SIMULATION RESULTS</div>
+            <h1 class="fw-bold mb-3" style="font-size: 2.5rem; letter-spacing: -1px;">Hasil Simulasi <span class="text-primary">(Vaksinasi #<?php echo isset($targetSession) ? $targetSession : 1; ?>)</span></h1>
+            <p class="text-secondary mb-0" style="max-width: 600px;">Detailed breakdown of patient queue dynamics across multiple service stages. Optimized for bottleneck identification and throughput analysis.</p>
         </div>
-        <a href="history.php" class="btn btn-primary d-flex align-items-center gap-2">
-            <span>⬅</span> Kembali ke Riwayat
+        <a href="history.php" class="btn btn-light shadow-sm text-primary fw-bold px-4 py-2 d-flex align-items-center gap-2" style="border-radius: 8px;">
+            <i class="bi bi-arrow-left"></i> Kembali ke Riwayat
         </a>
     </div>
 
-    <div class="card border-0 shadow rounded-4 overflow-hidden">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover table-bordered table-custom mb-0">
-                    <thead class="text-center">
-                        <tr>
-                            <th rowspan="2" class="align-middle fs-5">Pasien ID</th>
-                            <th rowspan="2" class="align-middle fs-5 text-nowrap" style="background-color: #16a085; color: white;">Arrival Time</th>
-                            <th rowspan="2" class="align-middle fs-5 text-nowrap" style="background-color: #8e44ad; color: white;">Global Interarrival<br><small class="fw-normal">(Masuk Sistem)</small></th>
-                            <th colspan="4" class="py-3 text-white" style="background-color: #9b59b6;">Interarrival Time (Masuk Stage)</th>
-                            <th colspan="5" class="py-3 text-white" style="background-color: #34495e;">Waiting Time (Masuk Stage - Masuk Queue)</th>
-                            <th colspan="5" class="py-3 text-white" style="background-color: #2980b9;">Service Time (Keluar Stage - Masuk Stage)</th>
-                            <th rowspan="2" class="align-middle fs-5">Total Time (Selesai - Masuk Queue 1)</th>
-                        </tr>
-                        <tr>
-                            <th style="background-color: #9b59b6; color: white;">Stage 1</th>
-                            <th style="background-color: #9b59b6; color: white;">Stage 2</th>
-                            <th style="background-color: #9b59b6; color: white;">Stage 3</th>
-                            <th style="background-color: #9b59b6; color: white;">Stage 4</th>
-                            
-                            <th style="background-color: #34495e; color: white;">Stage 1</th>
-                            <th style="background-color: #34495e; color: white;">Stage 2</th>
-                            <th style="background-color: #34495e; color: white;">Stage 3</th>
-                            <th style="background-color: #34495e; color: white;">Stage 4</th>
-                            <th style="background-color: #2c3e50; color: white;">Total WQ</th>
-                            
-                            <th style="background-color: #2980b9; color: white;">Stage 1</th>
-                            <th style="background-color: #2980b9; color: white;">Stage 2</th>
-                            <th style="background-color: #2980b9; color: white;">Stage 3</th>
-                            <th style="background-color: #2980b9; color: white;">Stage 4</th>
-                            <th style="background-color: #2471a3; color: white;">Total SRV</th>
-                        </tr>
-                    </thead>
-                    <tbody class="text-center">
-                        <?php 
-                            $sWait = [1=>0, 2=>0, 3=>0, 4=>0, 'total'=>0];
-                            $cWait = [1=>0, 2=>0, 3=>0, 4=>0, 'total'=>0];
-                            $sSrv = [1=>0, 2=>0, 3=>0, 4=>0, 'total'=>0];
-                            $cSrv = [1=>0, 2=>0, 3=>0, 4=>0, 'total'=>0];
-                            $sTot = 0; $cTot = 0;
-                        ?>
-                        <?php if (empty($data)): ?>
-                            <tr><td colspan="18" class="text-muted py-5 fst-italic">Belum ada data pasien yang selesai (completed Stage 4). Silakan jalankan simulasi.</td></tr>
-                        <?php else: ?>
-                            <?php foreach($data as $index => $user): ?>
-                                <tr>
-                                    <td class="fw-bold fs-5 text-primary align-middle border-end">#<?php echo $user['id']; ?></td>
-                                    
-                                    <td class="align-middle fw-bold border-end" style="color: #16a085; font-family: monospace; font-size: 1.1rem;">
-                                        <?php echo formatTimestamp(getArrivalTime($user)); ?>
-                                    </td>
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-5">
+        <!-- Card 1 -->
+        <div class="col-md-3">
+            <div class="report-card p-4">
+                <div class="text-secondary fw-bold text-uppercase mb-2" style="font-size: 0.65rem; letter-spacing: 1.5px;">TOTAL PATIENTS</div>
+                <div class="fw-bold text-dark" style="font-size: 2.5rem; line-height: 1;"><?php echo $totalPatients; ?></div>
+            </div>
+        </div>
+        <!-- Card 2 -->
+        <div class="col-md-3">
+            <div class="report-card p-4">
+                <div class="text-secondary fw-bold text-uppercase mb-2" style="font-size: 0.65rem; letter-spacing: 1.5px; color: #2563eb !important;">SIMULATION TIME</div>
+                <div class="fw-bold text-dark" style="font-size: 2.5rem; line-height: 1;"><?php echo $simTimeStr; ?></div>
+            </div>
+        </div>
+    </div>
 
-                                    <td class="align-middle fw-bold border-end" style="color: #8e44ad; font-family: monospace; font-size: 1.1rem;">
-                                        <?php 
-                                            $nextUser = isset($data[$index + 1]) ? $data[$index + 1] : null;
-                                            $currArr = getArrivalTime($user);
-                                            $nextArr = $nextUser ? getArrivalTime($nextUser) : 0;
-                                            
-                                            $interarrival = 0;
-                                            if ($nextArr > 0 && $currArr > 0) {
-                                                $interarrival = $nextArr - $currArr;
-                                            }
-                                            
-                                            echo formatDuration($interarrival);
-                                        ?>
-                                    </td>
-                                    
-                                    <!-- Interarrival Times (Per Stage) -->
-                                    <?php for($i = 1; $i <= 4; $i++): ?>
-                                        <td class="align-middle fw-bold" style="color: #8e44ad; background-color: #fcf6fd; border-right: 1px solid #dee2e6;">
-                                            <?php 
-                                            // Call calculateStageSpecificInterarrival
-                                            $val = calculateStageSpecificInterarrival($data, $index, $i);
-                                            if ($val == 'Tidak Lanjut') {
-                                                echo '<span class="badge bg-secondary fs-6 rounded-3 px-3 py-2 shadow-sm">Tidak Lanjut</span>';
-                                            } else {
-                                                echo $val;
-                                            }
-                                            ?>
-                                        </td>
-                                    <?php endfor; ?>
-                                    
-                                    <!-- Waiting Times -->
-                                    <?php $totalWait = 0; ?>
-                                    <?php for($i = 1; $i <= 4; $i++): ?>
-                                        <?php 
-                                            $wait = calculateStageWait($user['history'], $i); 
-                                            if ($wait != -1) {
-                                                $totalWait += $wait;
-                                                if ($wait > 0) { $sWait[$i] += $wait; $cWait[$i]++; }
-                                            }
-                                        ?>
-                                        <td class="align-middle" style="background-color: #fdfefe;">
-                                            <?php if ($wait == -1): ?>
-                                                <span class="badge bg-secondary fs-6 rounded-3 px-3 py-2 shadow-sm">
-                                                    Tidak Lanjut
-                                                </span>
-                                            <?php else: ?>
-                                                <span class="badge bg-<?php echo ($wait > 10000) ? 'danger' : (($wait > 4000) ? 'warning text-dark' : 'success'); ?> fs-6 rounded-3 px-3 py-2 shadow-sm">
-                                                    <?php echo formatDuration($wait); ?>
-                                                </span>
-                                            <?php endif; ?>
-                                        </td>
-                                    <?php endfor; ?>
-                                    
-                                    <?php if ($totalWait > 0) { $sWait['total'] += $totalWait; $cWait['total']++; } ?>
-                                    <td class="align-middle" style="background-color: #fdfefe; border-left: 2px solid #34495e;">
-                                        <span class="badge bg-dark fs-6 rounded-3 px-3 py-2 shadow-sm">
-                                            <?php echo formatDuration($totalWait); ?>
-                                        </span>
-                                    </td>
-                                    
-                                    <!-- Service Times -->
-                                    <?php $totalService = 0; ?>
-                                    <?php for($i = 1; $i <= 4; $i++): ?>
-                                        <?php 
-                                            $service = calculateStageService($user['history'], $i); 
-                                            if ($service != -1) {
-                                                $totalService += $service;
-                                                if ($service > 0) { $sSrv[$i] += $service; $cSrv[$i]++; }
-                                            }
-                                        ?>
-                                        <td class="align-middle" style="background-color: #f4f9f9; border-left: 1px solid #dee2e6;">
-                                            <?php if ($service == -1): ?>
-                                                <span class="badge bg-secondary fs-6 rounded-3 px-3 py-2 shadow-sm">
-                                                    Tidak Lanjut
-                                                </span>
-                                            <?php else: ?>
-                                                <span class="badge bg-info text-dark fs-6 rounded-3 px-3 py-2 shadow-sm">
-                                                    <?php echo formatDuration($service); ?>
-                                                </span>
-                                            <?php endif; ?>
-                                        </td>
-                                    <?php endfor; ?>
-
-                                    <?php if ($totalService > 0) { $sSrv['total'] += $totalService; $cSrv['total']++; } ?>
-                                    <td class="align-middle" style="background-color: #f4f9f9; border-left: 2px solid #2980b9;">
-                                        <span class="badge bg-primary text-white fs-6 rounded-3 px-3 py-2 shadow-sm">
-                                            <?php echo formatDuration($totalService); ?>
-                                        </span>
-                                    </td>
-                                    
-                                    <td class="bg-light align-middle border-start">
-                                        <h4 class="mb-0 text-dark fw-bold">
-                                            <?php 
-                                                $tSys = getTotalTime($user);
-                                                if ($tSys > 0) { $sTot += $tSys; $cTot++; }
-                                                echo formatDuration($tSys); 
-                                            ?>
-                                        </h4>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                            
-                            <!-- RATA - RATA -->
-                            <tr style="background-color: #e9ecef; border-top: 3px solid #dee2e6;">
-                                <td colspan="7" class="fw-bold fs-5 text-end pe-4 align-middle text-dark">RATA - RATA :</td>
+    <!-- Data Table Card -->
+    <div class="report-card overflow-hidden">
+        <div class="p-4 d-flex justify-content-between align-items-center border-bottom border-light">
+            <h5 class="fw-bold mb-0 text-dark">Raw Execution Data</h5>
+            <div class="d-flex gap-3">
+                <button class="btn btn-link text-secondary p-0"><i class="bi bi-filter text-dark fs-5"></i></button>
+                <button class="btn btn-link text-secondary p-0"><i class="bi bi-download text-dark fs-5"></i></button>
+            </div>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table table-custom mb-0 text-center">
+                <thead>
+                    <tr>
+                        <th rowspan="2" class="align-middle" style="background-color: #1a2332;">ID<br>PASIEN</th>
+                        <th rowspan="2" class="align-middle" style="background-color: #1a2332;">WAKTU<br>KEDATANGAN</th>
+                        <th rowspan="2" class="align-middle" style="background-color: #1a2332;">MASUK<br>SISTEM</th>
+                        <th colspan="4" class="py-3" style="background-color: #0d9488;">INTERARRIVAL TIME (MASUK STAGE)</th>
+                        <th colspan="5" class="py-3" style="background-color: #6366f1;">WAITING TIME (MASUK STAGE - MASUK QUEUE)</th>
+                        <th colspan="5" class="py-3" style="background-color: #1e3a8a;">SERVICE TIME</th>
+                        <th rowspan="2" class="align-middle" style="background-color: #1a2332;">TOTAL<br>TIME</th>
+                    </tr>
+                    <tr>
+                        <th class="py-2 px-1" style="background-color: #14b8a6;">STAGE 1</th>
+                        <th class="py-2 px-1" style="background-color: #14b8a6;">STAGE 2</th>
+                        <th class="py-2 px-1" style="background-color: #14b8a6;">STAGE 3</th>
+                        <th class="py-2 px-1" style="background-color: #14b8a6;">STAGE 4</th>
+                        
+                        <th class="py-2 px-1" style="background-color: #818cf8;">STAGE 1</th>
+                        <th class="py-2 px-1" style="background-color: #818cf8;">STAGE 2</th>
+                        <th class="py-2 px-1" style="background-color: #818cf8;">STAGE 3</th>
+                        <th class="py-2 px-1" style="background-color: #818cf8;">STAGE 4</th>
+                        <th class="py-2 px-1" style="background-color: #4f46e5;">TOTAL WQ</th>
+                        
+                        <th class="py-2 px-1" style="background-color: #3b82f6;">STAGE 1</th>
+                        <th class="py-2 px-1" style="background-color: #3b82f6;">STAGE 2</th>
+                        <th class="py-2 px-1" style="background-color: #3b82f6;">STAGE 3</th>
+                        <th class="py-2 px-1" style="background-color: #3b82f6;">STAGE 4</th>
+                        <th class="py-2 px-1" style="background-color: #2563eb;">TOTAL SRV</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white">
+                    <?php 
+                        $sWait = [1=>0, 2=>0, 3=>0, 4=>0, 'total'=>0];
+                        $cWait = [1=>0, 2=>0, 3=>0, 4=>0, 'total'=>0];
+                        $sSrv = [1=>0, 2=>0, 3=>0, 4=>0, 'total'=>0];
+                        $cSrv = [1=>0, 2=>0, 3=>0, 4=>0, 'total'=>0];
+                        $sInter = [1=>0, 2=>0, 3=>0, 4=>0];
+                        $cInter = [1=>0, 2=>0, 3=>0, 4=>0];
+                        $sTot = 0; $cTot = 0;
+                    ?>
+                    <?php if (empty($data)): ?>
+                        <tr><td colspan="19" class="text-muted py-5 fst-italic">Belum ada rekaman eksekusi simulasi.</td></tr>
+                    <?php else: ?>
+                        <?php foreach($data as $index => $user): ?>
+                            <tr>
+                                <td class="fw-bold text-primary px-3 align-middle">
+                                    PA-<?php echo sprintf('%03d', $user['id']); ?>
+                                </td>
                                 
-                                <!-- Wait Times -->
+                                <td class="align-middle text-secondary">
+                                    <?php echo formatTimestamp(getArrivalTime($user)); ?>
+                                </td>
+
+                                <td class="align-middle fw-bold text-dark">
+                                    <?php 
+                                        $nextUser = isset($data[$index + 1]) ? $data[$index + 1] : null;
+                                        $currArr = getArrivalTime($user);
+                                        $nextArr = $nextUser ? getArrivalTime($nextUser) : 0;
+                                        
+                                        $interarrival = 0;
+                                        if ($nextArr > 0 && $currArr > 0) {
+                                            $interarrival = $nextArr - $currArr;
+                                        }
+                                        echo formatDuration($interarrival);
+                                    ?>
+                                </td>
+                                
+                                <!-- Interarrival Times (Per Stage) -->
                                 <?php for($i = 1; $i <= 4; $i++): ?>
-                                    <td class="align-middle fw-bold text-dark" style="background-color: #fdfefe;">
-                                        <?php echo $cWait[$i] > 0 ? formatDuration($sWait[$i] / $cWait[$i]) : '-'; ?>
+                                    <td class="align-middle text-secondary">
+                                        <?php 
+                                        $val = calculateStageSpecificInterarrival($data, $index, $i);
+                                        if ($val >= 0) {
+                                            $sInter[$i] += $val;
+                                            $cInter[$i]++;
+                                        }
+                                        echo formatDuration($val);
+                                        ?>
                                     </td>
                                 <?php endfor; ?>
-                                <td class="align-middle fw-bold text-dark fs-6" style="background-color: #fdfefe; border-left: 2px solid #34495e;">
-                                    <?php echo $cWait['total'] > 0 ? formatDuration($sWait['total'] / $cWait['total']) : '-'; ?>
+                                
+                                <!-- Waiting Times -->
+                                <?php $totalWait = 0; ?>
+                                <?php for($i = 1; $i <= 4; $i++): ?>
+                                    <?php 
+                                        $wait = calculateStageWait($user['history'], $i); 
+                                        if ($wait != -1) {
+                                            $totalWait += $wait;
+                                            if ($wait > 0) { $sWait[$i] += $wait; $cWait[$i]++; }
+                                        }
+                                    ?>
+                                    <td class="align-middle <?php echo ($wait > 4000) ? 'text-warning-red fw-bold' : 'text-secondary'; ?>">
+                                        <?php echo formatDuration($wait); ?>
+                                    </td>
+                                <?php endfor; ?>
+                                
+                                <?php if ($totalWait > 0) { $sWait['total'] += $totalWait; $cWait['total']++; } ?>
+                                <td class="align-middle fw-bold text-purple" style="background-color: #faf5ff;">
+                                    <?php echo formatDuration($totalWait); ?>
                                 </td>
                                 
                                 <!-- Service Times -->
+                                <?php $totalService = 0; ?>
                                 <?php for($i = 1; $i <= 4; $i++): ?>
-                                    <td class="align-middle fw-bold text-dark" style="background-color: #f4f9f9; border-left: 1px solid #dee2e6;">
-                                        <?php echo $cSrv[$i] > 0 ? formatDuration($sSrv[$i] / $cSrv[$i]) : '-'; ?>
+                                    <?php 
+                                        $service = calculateStageService($user['history'], $i); 
+                                        if ($service != -1) {
+                                            $totalService += $service;
+                                            if ($service > 0) { $sSrv[$i] += $service; $cSrv[$i]++; }
+                                        }
+                                    ?>
+                                    <td class="align-middle text-secondary">
+                                        <?php echo formatDuration($service); ?>
                                     </td>
                                 <?php endfor; ?>
-                                <td class="align-middle fw-bold text-primary fs-6" style="background-color: #f4f9f9; border-left: 2px solid #2980b9;">
-                                    <?php echo $cSrv['total'] > 0 ? formatDuration($sSrv['total'] / $cSrv['total']) : '-'; ?>
+
+                                <?php if ($totalService > 0) { $sSrv['total'] += $totalService; $cSrv['total']++; } ?>
+                                <td class="align-middle fw-bold text-primary" style="background-color: #eff6ff;">
+                                    <?php echo formatDuration($totalService); ?>
                                 </td>
                                 
-                                <!-- Total System Time -->
-                                <td class="bg-light align-middle border-start">
-                                    <h5 class="mb-0 text-dark fw-bold">
-                                        <?php echo $cTot > 0 ? formatDuration($sTot / $cTot) : '-'; ?>
-                                    </h5>
+                                <td class="align-middle fw-bold text-dark">
+                                    <?php 
+                                        $tSys = getTotalTime($user);
+                                        if ($tSys > 0) { $sTot += $tSys; $cTot++; }
+                                        echo formatDuration($tSys); 
+                                    ?>
                                 </td>
                             </tr>
+                        <?php endforeach; ?>
+                        
+                        <!-- RATA - RATA -->
+                        <tr style="background-color: #f1f5f9; border-top: 2px solid #e2e8f0;">
+                            <td colspan="3" class="fw-bold text-end pe-4 align-middle text-dark">Average Values:</td>
                             
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
+                            <!-- Inter Times -->
+                            <?php for($i = 1; $i <= 4; $i++): ?>
+                                <td class="align-middle fw-bold text-dark">
+                                    <?php echo $cInter[$i] > 0 ? formatDuration($sInter[$i] / $cInter[$i]) : '-'; ?>
+                                </td>
+                            <?php endfor; ?>
+
+                            <!-- Wait Times -->
+                            <?php for($i = 1; $i <= 4; $i++): ?>
+                                <td class="align-middle fw-bold text-dark">
+                                    <?php echo $cWait[$i] > 0 ? formatDuration($sWait[$i] / $cWait[$i]) : '-'; ?>
+                                </td>
+                            <?php endfor; ?>
+                            <td class="align-middle fw-bold text-purple" style="background-color: #faf5ff;">
+                                <?php echo $cWait['total'] > 0 ? formatDuration($sWait['total'] / $cWait['total']) : '-'; ?>
+                            </td>
+                            
+                            <!-- Service Times -->
+                            <?php for($i = 1; $i <= 4; $i++): ?>
+                                <td class="align-middle fw-bold text-dark">
+                                    <?php echo $cSrv[$i] > 0 ? formatDuration($sSrv[$i] / $cSrv[$i]) : '-'; ?>
+                                </td>
+                            <?php endfor; ?>
+                            <td class="align-middle fw-bold text-primary" style="background-color: #eff6ff;">
+                                <?php echo $cSrv['total'] > 0 ? formatDuration($sSrv['total'] / $cSrv['total']) : '-'; ?>
+                            </td>
+                            
+                            <!-- Total System Time -->
+                            <td class="align-middle fw-bold text-dark">
+                                <?php echo $cTot > 0 ? formatDuration($sTot / $cTot) : '-'; ?>
+                            </td>
+                        </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
         </div>
     </div>
 
     <!-- Desktop DES Section -->
-    <div class="mt-5 border-top pt-5">
-        <div class="d-flex align-items-center mb-4">
-            <h2 class="fw-bold mb-0 me-3">📈 Discrete Event Simulation (DES)</h2>
-            <span class="badge bg-primary fs-6 rounded-pill shadow-sm py-2 px-3">Predictive Analysis</span>
-        </div>
+    <div class="mt-5 border-top border-light pt-5 pb-5">
         
-        <p class="text-secondary lead mb-4">
-            Engineered using historical queue data from Vaksinasi #<?php echo isset($targetSession) ? $targetSession : 1; ?> to simulate future states and analyze hypothetical system limits.
-        </p>
+        <!-- DES Header -->
+        <div class="d-flex justify-content-between align-items-start mb-4">
+            <div>
+                <h2 class="fw-bold mb-3 d-flex align-items-center flex-wrap gap-3" style="font-size: 2rem; letter-spacing: -0.5px; color: #0f172a;">
+                    Discrete Event Simulation (DES)
+                    <span class="badge" style="background-color: #e0e7ff; color: #3730a3; font-size: 0.75rem; letter-spacing: 1px; padding: 0.6rem 1rem; border-radius: 6px; border: 1px solid #c7d2fe;">PREDICTIVE ANALYSIS</span>
+                </h2>
+                <p class="text-secondary mb-0" style="max-width: 650px; font-size: 0.95rem; line-height: 1.6;">
+                    High-fidelity computational modeling for complex queue systems. Adjust parameters below to calculate architectural system efficiency.
+                </p>
+            </div>
+            <div class="d-flex gap-3 mt-3 mt-md-0">
+                <button id="btnResetDes" class="btn text-danger fw-bold shadow-sm" style="background: white; border: 1px solid #fca5a5; border-radius: 6px; padding: 0.6rem 1.5rem; font-size: 0.85rem; letter-spacing: 1px;">RESET</button>
+                <button id="btnStartDes" class="btn btn-primary fw-bold text-white shadow-sm d-flex align-items-center gap-2" style="border-radius: 6px; padding: 0.6rem 1.5rem; font-size: 0.85rem; letter-spacing: 1px;">
+                    <i class="bi bi-star-fill"></i> START SIMULATION
+                </button>
+            </div>
+        </div>
 
-        <!-- Control Panel -->
-        <div class="card border-0 shadow-sm rounded-4 mb-4" style="background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);">
-            <div class="card-body p-4">
-                <div class="row align-items-end mb-4">
-                    <div class="col-md-4">
-                        <label class="form-label fw-bold text-dark">REPS (Replikasi)</label>
-                        <input type="number" id="desReps" class="form-control form-control-lg border-0 shadow-sm rounded-3" value="200">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-bold text-dark">WARMUP (Abaikan)</label>
-                        <input type="number" id="desWarmup" class="form-control form-control-lg border-0 shadow-sm rounded-3" value="10">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-bold text-dark">OBS (Diobservasi)</label>
-                        <input type="number" id="desObs" class="form-control form-control-lg border-0 shadow-sm rounded-3" value="30">
-                    </div>
-                </div>
-                
-                <div class="p-3 bg-white rounded-4 shadow-sm border border-light">
-                    <h6 class="fw-bold mb-3 text-secondary border-bottom pb-2">⚙️ Advanced Scenario (G/G/c)</h6>
-                    <div class="row align-items-end">
-                        <div class="col-md-4 mb-2 mb-md-0">
-                            <label class="form-label fw-semibold text-dark" style="font-size: 0.9rem;">Batas Kapasitas per Jam (Quota)</label>
-                            <input type="number" id="desQuota" class="form-control border-light bg-light" value="0" placeholder="0 = Unlimited">
+        <div class="row g-4 mb-4">
+            <!-- Left Column: SYSTEM INPUTS -->
+            <div class="col-lg-4">
+                <div class="report-card p-4 h-100" style="background-color: #f8fafc; border: 1px solid #f1f5f9;">
+                    <h6 class="fw-bold text-dark mb-4 d-flex align-items-center gap-2" style="font-size: 0.85rem; letter-spacing: 1px;">
+                        <i class="bi bi-sliders text-primary"></i> SYSTEM INPUTS
+                    </h6>
+                    
+                    <div class="row g-3 mb-4">
+                        <div class="col-6">
+                            <label class="form-label text-secondary fw-bold text-uppercase" style="font-size: 0.65rem; letter-spacing: 1px;">REPS (REPLIKASI)</label>
+                            <input type="number" id="desReps" class="form-control border-0 shadow-sm" value="200" style="padding: 0.75rem;">
                         </div>
-                        <div class="col-md-8">
-                            <label class="form-label fw-semibold text-dark mb-2" style="font-size: 0.9rem;">Jumlah Server (Pelayan) per Tahap</label>
-                            <div class="d-flex gap-2">
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-light text-muted" style="font-size: 0.8rem;">Stg 1</span>
-                                    <input type="number" id="srv1" class="form-control border-light" value="1" min="1">
-                                </div>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-light text-muted" style="font-size: 0.8rem;">Stg 2</span>
-                                    <input type="number" id="srv2" class="form-control border-light" value="1" min="1">
-                                </div>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-light text-muted" style="font-size: 0.8rem;">Stg 3</span>
-                                    <input type="number" id="srv3" class="form-control border-light" value="1" min="1">
-                                </div>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-light text-muted" style="font-size: 0.8rem;">Stg 4</span>
-                                    <input type="number" id="srv4" class="form-control border-light" value="1" min="1">
-                                </div>
+                        <div class="col-6">
+                            <label class="form-label text-secondary fw-bold text-uppercase" style="font-size: 0.65rem; letter-spacing: 1px;">WARMUP (ABAIKAN)</label>
+                            <input type="number" id="desWarmup" class="form-control border-0 shadow-sm" value="10" style="padding: 0.75rem;">
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label text-secondary fw-bold text-uppercase" style="font-size: 0.65rem; letter-spacing: 1px;">OBS (DIOBSERVASI)</label>
+                        <input type="number" id="desObs" class="form-control border-0 shadow-sm" value="30" style="padding: 0.75rem;">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label text-secondary fw-bold text-uppercase" style="font-size: 0.65rem; letter-spacing: 1px;">BATAS KAPASITAS PER JAM</label>
+                        <input type="number" id="desQuota" class="form-control border-0 shadow-sm" value="0" style="padding: 0.75rem;" placeholder="0 = Unlimited">
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label text-secondary fw-bold text-uppercase" style="font-size: 0.65rem; letter-spacing: 1px;">SERVER ALLOCATION PER STAGE</label>
+                        <div class="d-flex gap-2">
+                            <div class="text-center w-100">
+                                <div class="text-secondary fw-bold" style="font-size: 0.55rem; letter-spacing: 1px; margin-bottom: 4px;">ST-1</div>
+                                <input type="number" id="srv1" class="form-control border-0 shadow-sm text-center px-1" value="1" min="1">
+                            </div>
+                            <div class="text-center w-100">
+                                <div class="text-secondary fw-bold" style="font-size: 0.55rem; letter-spacing: 1px; margin-bottom: 4px;">ST-2</div>
+                                <input type="number" id="srv2" class="form-control border-0 shadow-sm text-center px-1" value="1" min="1">
+                            </div>
+                            <div class="text-center w-100">
+                                <div class="text-secondary fw-bold" style="font-size: 0.55rem; letter-spacing: 1px; margin-bottom: 4px;">ST-3</div>
+                                <input type="number" id="srv3" class="form-control border-0 shadow-sm text-center px-1" value="1" min="1">
+                            </div>
+                            <div class="text-center w-100">
+                                <div class="text-secondary fw-bold" style="font-size: 0.55rem; letter-spacing: 1px; margin-bottom: 4px;">ST-4</div>
+                                <input type="number" id="srv4" class="form-control border-0 shadow-sm text-center px-1" value="1" min="1">
                             </div>
                         </div>
                     </div>
                 </div>
-                
-                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                    <button id="btnStartDes" class="btn btn-primary btn-lg shadow rounded-pill fw-bold px-5">🌟 Start Simulation</button>
-                    <button id="btnResetDes" class="btn btn-outline-danger btn-lg shadow-sm rounded-pill px-4">Reset</button>
-                </div>
             </div>
-        </div>
 
-        <!-- Results Container -->
-        <div id="desResultsContainer" class="d-none animate-fade-in">
-            <!-- Table 1 & 3 row -->
-            <div class="row g-4 mb-4">
-                <!-- Table 1: Per Stage Performance -->
-                <div class="col-lg-6">
-                    <div class="card border-0 shadow rounded-4 h-100">
-                        <div class="card-header bg-white border-0 pt-4 pb-0">
-                            <h5 class="fw-bold text-dark">📊 Table 1: Per Stage Performance</h5>
+            <!-- Right Column: Results Container -->
+            <div class="col-lg-8 position-relative">
+                <div id="desResultsContainer" class="d-none animate-fade-in w-100 h-100">
+                    
+                    <!-- Table 3 -->
+                    <div class="report-card p-4 mb-4" style="border: 1px solid #f1f5f9;">
+                        <h6 class="text-secondary fw-bold text-uppercase mb-4" style="font-size: 0.7rem; letter-spacing: 1.5px;">TABLE 3: OVERALL SYSTEM METRICS</h6>
+                        <div class="row align-items-center">
+                            <div class="col-6 col-md-3 mb-3 mb-md-0">
+                                <div class="text-secondary fw-bold text-uppercase mb-1" style="font-size: 0.6rem; letter-spacing: 0.5px;">WQ (QUEUE TIME)</div>
+                                <div class="fw-bold" style="font-size: 2rem; color: #2563eb; line-height: 1;">
+                                    <span id="sysWq">0</span>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3 mb-3 mb-md-0">
+                                <div class="text-secondary fw-bold text-uppercase mb-1" style="font-size: 0.6rem; letter-spacing: 0.5px;">W (SYSTEM TIME)</div>
+                                <div class="fw-bold text-dark" style="font-size: 2rem; line-height: 1;">
+                                    <span id="sysW">0</span>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="text-secondary fw-bold text-uppercase mb-1" style="font-size: 0.6rem; letter-spacing: 0.5px;">LQ (AVG QUEUE)</div>
+                                <div class="fw-bold" style="font-size: 2rem; color: #3b82f6; line-height: 1;">
+                                    <span id="sysLq">0</span>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="text-secondary fw-bold text-uppercase mb-1" style="font-size: 0.6rem; letter-spacing: 0.5px;">L (AVG SYSTEM)</div>
+                                <div class="fw-bold text-dark" style="font-size: 2rem; line-height: 1;">
+                                    <span id="sysL">0</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-body">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead class="table-light text-secondary">
-                                    <tr>
-                                        <th>Stage</th>
-                                        <th>Avg Waiting Time</th>
-                                        <th>Avg Service Time</th>
+                    </div>
+
+                    <!-- Table 1 -->
+                    <div class="report-card p-4" style="border: 1px solid #f1f5f9; min-height: 250px;">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h6 class="text-secondary fw-bold text-uppercase mb-0" style="font-size: 0.7rem; letter-spacing: 1.5px;">TABLE 1: PER STAGE PERFORMANCE</h6>
+                            <i class="bi bi-layout-text-window-reverse text-secondary" style="font-size: 1.2rem;"></i>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table mb-0 align-middle">
+                                <thead>
+                                    <tr class="text-secondary fw-bold text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.5px; border-bottom: 2px solid #f1f5f9;">
+                                        <th class="ps-0 border-0 pb-3" style="font-weight: 700 !important; color: #64748b;">STAGE ID</th>
+                                        <th class="border-0 pb-3" style="font-weight: 700 !important; color: #64748b;">AVG WAITING TIME<br>(MIN)</th>
+                                        <th class="border-0 pb-3" style="font-weight: 700 !important; color: #64748b;">AVG SERVICE TIME<br>(MIN)</th>
                                     </tr>
                                 </thead>
-                                <tbody id="t1Body"></tbody>
+                                <tbody id="t1Body">
+                                    <!-- Populated automatically -->
+                                </tbody>
                             </table>
                         </div>
                     </div>
+                    
                 </div>
                 
-                <!-- Table 3: Overal System -->
-                <div class="col-lg-6">
-                    <div class="card border-0 shadow rounded-4 h-100 text-white" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);">
-                        <div class="card-header border-0 pt-4 pb-0 bg-transparent">
-                            <h5 class="fw-bold text-white">🌐 Table 3: Overall System Metrics</h5>
-                        </div>
-                        <div class="card-body d-flex flex-column justify-content-center">
-                            <div class="row text-center mt-2 flex-grow-1 align-items-center">
-                                <div class="col-6 mb-4">
-                                    <h6 class="text-white-50 text-uppercase fw-bold" style="letter-spacing: 1px; font-size: 0.8rem;">Wq (Wait Queue)</h6>
-                                    <h2 class="fw-bold mb-0 text-warning" id="sysWq">0</h2>
-                                </div>
-                                <div class="col-6 mb-4">
-                                    <h6 class="text-white-50 text-uppercase fw-bold" style="letter-spacing: 1px; font-size: 0.8rem;">W (Total Time)</h6>
-                                    <h2 class="fw-bold mb-0 text-warning" id="sysW">0</h2>
-                                </div>
-                                <div class="col-6">
-                                    <h6 class="text-white-50 text-uppercase fw-bold" style="letter-spacing: 1px; font-size: 0.8rem;">Lq (Queue Length)</h6>
-                                    <h2 class="fw-bold mb-0 text-info" id="sysLq">0</h2>
-                                </div>
-                                <div class="col-6">
-                                    <h6 class="text-white-50 text-uppercase fw-bold" style="letter-spacing: 1px; font-size: 0.8rem;">L (System Length)</h6>
-                                    <h2 class="fw-bold mb-0 text-info" id="sysL">0</h2>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Table 2: Queue Parameters -->
-            <div class="card border-0 shadow rounded-4 mb-5">
-                <div class="card-header bg-white border-0 pt-4 pb-0">
-                    <h5 class="fw-bold text-dark">📈 Table 2: Queue Parameters per Stage</h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle text-center mb-4">
-                            <thead class="table-light text-secondary">
-                                <tr>
-                                    <th>Stage</th>
-                                    <th>Ai <br><small>(Mean Arrival)</small></th>
-                                    <th>σAi <br><small>(Std. Dev)</small></th>
-                                    <th>CAi <br><small>(CoV)</small></th>
-                                    <th>Si <br><small>(Mean Service)</small></th>
-                                    <th>σSi <br><small>(Std. Dev)</small></th>
-                                    <th>CSi <br><small>(CoV)</small></th>
-                                    <th>λi <br><small>(Arrival Rate)</small></th>
-                                    <th>ρi <br><small>(Utilization)</small></th>
-                                    <th>μi <br><small>(Service Rate)</small></th>
-                                </tr>
-                            </thead>
-                            <tbody id="t2Body"></tbody>
-                        </table>
-                    </div>
-                    
-                    <div class="alert alert-info border-0 rounded-4 shadow-sm bg-opacity-25" style="background-color: #e3f2fd;" role="alert">
-                        <div class="d-flex align-items-center mb-2">
-                            <h5 class="alert-heading fw-bold mb-0 text-primary">💡 Insight Teori Antrean</h5>
-                        </div>
-                        <hr class="border-primary opacity-25 mt-0">
-                        <div class="text-dark">
-                            <div class="mb-4">
-                                <h6 class="fw-bold mb-2" style="color: #2c3e50;">Tingkat Keacakan Waktu (CA / CS)</h6>
-                                <p class="mb-2 text-muted" style="font-size: 0.95rem;">Parameter ini mengukur seberapa besar fluktuasi (ketidakpastian) waktu antrean terbentuk maupun waktu layanan diselesaikan.</p>
-                                <ul class="mb-0 text-muted" style="font-size: 0.95rem;">
-                                    <li><strong>Bernilai &gt; 1</strong> : Durasi layanan sangat bervariasi. Hal ini secara matematis akan memicu penumpukan antrean yang sulit diprediksi.</li>
-                                    <li><strong>Bernilai &lt; 1</strong> : Laju kedatangan tipe pasien dan waktu penanganan tergolong cukup konsisten dan stabil.</li>
-                                </ul>
-                            </div>
-                            
-                            <div>
-                                <h6 class="fw-bold mb-2" style="color: #2c3e50;">Beban Kapasitas Layanan (ρ / Utilisasi)</h6>
-                                <p class="mb-2 text-muted" style="font-size: 0.95rem;">Parameter ini menunjukkan utilisasi (proporsi) kesibukan staf terhadap jumlah pasien yang harus ditanggung pada tahap tertentu.</p>
-                                <ul class="mb-0 text-muted" style="font-size: 0.95rem;">
-                                    <li><strong>Di bawah 1</strong> : Kapasitas tenaga kerja masih sangat memadai untuk menangani kedatangan pasien.</li>
-                                    <li><strong>Mendekati 1</strong> : Beban kerja staf mencapai batas maksimal tanpa jeda istirahat; antrean rentan terbentuk.</li>
-                                    <li><strong>Melebihi 1</strong> : Kapasitas berlebih (<em>Overload / Bottleneck</em>). Volume pasien jauh melampaui kemampuan maksimal staf, dipastikan menyebabkan kemacetan sistemik.</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div id="kingmanWarning" class="alert alert-danger border-danger shadow-sm rounded-4 d-none mt-4" style="background-color: #fff5f5;">
-                        <h5 class="fw-bold mb-2 text-danger">⚠️ Peringatan Kestabilan Sistem & Analitik G/G/1</h5>
-                        <p class="mb-0 text-dark" id="kingmanWarningText"></p>
-                    </div>
+                <!-- Initial State Placeholder -->
+                <div id="desPlaceholder" class="report-card d-flex flex-column justify-content-center align-items-center text-secondary w-100 mx-auto" style="min-height: 400px; border: 2px dashed #e2e8f0; background-color: #f8fafc;">
+                    <i class="bi bi-box-seam" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 1rem;"></i>
+                    <p class="mt-3 text-muted fw-semibold" style="letter-spacing: 0.5px;">Ready to run simulation.</p>
                 </div>
             </div>
         </div>
+
+        <!-- Full Width Tables & Alerts -->
+        <div id="desBottomContainer" class="d-none animate-fade-in">
+            <!-- Table 2: Queue Parameters -->
+            <div class="report-card p-4 p-md-5 mb-4" style="border: 1px solid #f1f5f9;">
+                <h6 class="text-dark fw-bold text-uppercase mb-4 d-flex align-items-center gap-2" style="font-size: 0.85rem; letter-spacing: 1.5px;">
+                    <i class="bi bi-table text-primary p-1 bg-primary bg-opacity-10 rounded"></i> TABLE 2: QUEUE PARAMETERS PER STAGE
+                </h6>
+                <div class="table-responsive">
+                    <table class="table text-center align-middle mb-0" style="font-size: 0.8rem;">
+                        <thead>
+                            <tr class="text-secondary fw-bold text-uppercase" style="font-size: 0.65rem; border-bottom: 2px solid #e2e8f0 !important; color: #475569 !important;">
+                                <th class="border-0 pb-3 ps-0 text-start">STAGE</th>
+                                <th class="border-0 pb-3">λI<br><small class="text-muted fw-normal text-capitalize">(Mean Arrival)</small></th>
+                                <th class="border-0 pb-3">σAI<br><small class="text-muted fw-normal text-capitalize">(Std. Dev)</small></th>
+                                <th class="border-0 pb-3">CAI<br><small class="text-muted fw-normal text-capitalize">(CoV)</small></th>
+                                <th class="border-0 pb-3">SI<br><small class="text-muted fw-normal text-capitalize">(Mean Service)</small></th>
+                                <th class="border-0 pb-3">σSI<br><small class="text-muted fw-normal text-capitalize">(Std. Dev)</small></th>
+                                <th class="border-0 pb-3">CSI<br><small class="text-muted fw-normal text-capitalize">(CoV)</small></th>
+                                <th class="border-0 pb-3">ΛI<br><small class="text-muted fw-normal text-capitalize">(Arrival Rate)</small></th>
+                                <th class="border-0 pb-3">PI<br><small class="text-muted fw-normal text-capitalize">(Utilization)</small></th>
+                                <th class="border-0 pb-3 pe-0 text-end">MI<br><small class="text-muted fw-normal text-capitalize">(Service Rate)</small></th>
+                            </tr>
+                        </thead>
+                        <tbody id="t2Body" class="border-top-0">
+                            <!-- Populated automatically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Insight Alert -->
+            <div class="p-4 rounded-4 shadow-sm mb-4" style="background-color: #f8fafc; border: 1px solid #e2e8f0;">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <div style="background-color: #feefc3; border-radius: 50%; padding: 6px; display: inline-flex;">
+                        <i class="bi bi-lightbulb-fill text-warning fs-5"></i>
+                    </div>
+                    <h6 class="fw-bold mb-0 text-primary" style="font-size: 1rem;">Insight Teori Antrean</h6>
+                </div>
+                
+                <div class="mb-3">
+                    <h6 class="fw-bold text-dark d-block mb-1" style="font-size: 0.85rem;">Tingkat Keacakan Waktu (CA / CS)</h6>
+                    <p class="text-secondary mb-2" style="font-size: 0.85rem; line-height: 1.6;">Parameter ini mengukur seberapa besar fluktuasi (ketidakpastian) waktu antrean terbentuk maupun waktu layanan diselesaikan.</p>
+                    <ul class="text-secondary" style="font-size: 0.85rem; padding-left: 1.2rem; line-height: 1.6;">
+                        <li><strong>Bernilai &gt; 1</strong>: Durasi layanan sangat bervariasi. Hal ini secara matematis akan memicu penumpukan antrean yang sulit diprediksi.</li>
+                        <li><strong>Bernilai &lt; 1</strong>: Laju kedatangan tipe pasien dan waktu penanganan tergolong cukup konsisten dan stabil.</li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h6 class="fw-bold text-dark d-block mb-1" style="font-size: 0.85rem;">Beban Kapasitas Layanan (ρ / Utilisasi)</h6>
+                    <p class="text-secondary mb-2" style="font-size: 0.85rem; line-height: 1.6;">Parameter ini menunjukkan utilisasi (proporsi) kesibukan staf terhadap jumlah pasien yang harus ditanggung pada tahap tertentu.</p>
+                    <ul class="text-secondary mb-0" style="font-size: 0.85rem; padding-left: 1.2rem; line-height: 1.6;">
+                        <li><strong>Di bawah 1</strong>: Kapasitas tenaga kerja masih sangat memadai untuk menangani kedatangan pasien.</li>
+                        <li><strong>Mendekati 1</strong>: Beban kerja staf mencapai batas maksimal tanpa jeda istirahat; antrean rentan terbentuk.</li>
+                        <li><strong>Melebihi 1</strong>: Kapasitas berlebih (<em>Overload / Bottleneck</em>). Volume pasien jauh melampaui kemampuan maksimal staf, dipastikan menyebabkan kemacetan sistemik.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Kingman Warning Alert -->
+            <div id="kingmanWarning" class="p-4 rounded-4 shadow-sm d-none" style="background-color: #fef2f2; border: 1px solid #fecaca;">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <i class="bi bi-exclamation-triangle-fill text-danger fs-5"></i>
+                    <h6 class="fw-bold mb-0 text-danger" style="font-size: 1rem;">Peringatan Kestabilan Sistem & Analitik G/G/1</h6>
+                </div>
+                <p id="kingmanWarningText" class="text-danger mb-0" style="font-size: 0.85rem; line-height: 1.6;"></p>
+            </div>
+        </div>
+        
     </div>
 </div>
 
 <style>
 .animate-fade-in {
-    animation: fadeIn 0.5s ease-in-out;
+    animation: fadeIn 0.4s ease-out forwards;
 }
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
 }
+/* Basic row styling for T1 and T2 */
+#t1Body tr { border-bottom: 1px solid #f1f5f9; }
+#t1Body tr:last-child { border-bottom: none; }
+#t2Body tr { border-bottom: 1px solid #f1f5f9; }
+#t2Body tr:last-child { border-bottom: none; }
 </style>
 
 <script>
     const targetSessionId = <?php echo isset($targetSession) ? $targetSession : 1; ?>;
+    
+    // UI Enhancements over DES.js
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('btnStartDes').addEventListener('click', function() {
+            // Fix: remove d-flex before adding d-none to hide it completely
+            let pl = document.getElementById('desPlaceholder');
+            pl.classList.remove('d-flex');
+            pl.classList.add('d-none');
+            
+            document.getElementById('desResultsContainer').classList.remove('d-none');
+            document.getElementById('desBottomContainer').classList.remove('d-none');
+        });
+        
+        document.getElementById('btnResetDes').addEventListener('click', function() {
+            let pl = document.getElementById('desPlaceholder');
+            pl.classList.remove('d-none');
+            pl.classList.add('d-flex');
+            
+            document.getElementById('desResultsContainer').classList.add('d-none');
+            document.getElementById('desBottomContainer').classList.add('d-none');
+        });
+    });
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="des.js"></script>
