@@ -19,7 +19,7 @@ class QueueSimulation {
     }
 
     getStageName(i) {
-        const names = ["Arrival & Screening", "Documentation", "Verification", "Approval"];
+        const names = ["Registration", "Measurement and weighing", "Recording and screening", "Injection / vaccination stage"];
         return names[i - 1] || "Stage";
     }
 
@@ -85,7 +85,7 @@ class QueueSimulation {
         document.getElementById('btnAddUser').addEventListener('click', () => this.addUser());
         const fab = document.getElementById('fabAddUser');
         if (fab) fab.addEventListener('click', () => this.addUser());
-        
+
         const endBtn = document.getElementById('btnEndSim');
         if (endBtn) endBtn.addEventListener('click', () => this.resetSimulation());
     }
@@ -249,7 +249,7 @@ class QueueSimulation {
             } else {
                 status = 'PENDING';
                 badgeClass = 'bg-warning bg-opacity-10 text-warning';
-                
+
                 // If only 1 person in queue, show huge padded number.
                 // Else, show badges.
                 if (this.queues[i].length === 1) {

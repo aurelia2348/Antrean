@@ -66,8 +66,39 @@ foreach ($data as $user) {
     }
 }
 
-// Sort sessions naturally by descending ID (newest top)
-krsort($sessions);
+// --- SEARCH LOGIC ---
+$search = isset($_GET['search']) ? trim($_GET['search']) : '';
+if ($search !== '') {
+    $sessions = array_filter($sessions, function($s) use ($search) {
+        return stripos($s['name'], $search) !== false || stripos((string)$s['id'], $search) !== false;
+    });
+}
+
+// --- SORTING LOGIC ---
+$sort = isset($_GET['sort']) ? $_GET['sort'] : 'latest';
+usort($sessions, function($a, $b) use ($sort) {
+    // Prioritize TBA (null start_time) to the top
+    if ($a['start_time'] === null && $b['start_time'] !== null) return -1;
+    if ($a['start_time'] !== null && $b['start_time'] === null) return 1;
+    
+    $timeA = $a['start_time'] ?? 0;
+    $timeB = $b['start_time'] ?? 0;
+    
+    // If both are TBA or times are same, sort by ID descending
+    if ($timeA == $timeB) {
+        return $b['id'] <=> $a['id'];
+    }
+    
+    return ($sort === 'oldest') ? ($timeA <=> $timeB) : ($timeB <=> $timeA);
+});
+
+// --- PAGINATION LOGIC ---
+$limit = 7;
+$total_items = count($sessions);
+$total_pages = ceil($total_items / $limit);
+$page = isset($_GET['page']) ? max(1, min($total_pages, (int)$_GET['page'])) : 1;
+$offset = ($page - 1) * $limit;
+$paginated_sessions = array_slice($sessions, $offset, $limit);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -155,17 +186,30 @@ krsort($sessions);
             <!-- Table Card -->
             <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white mb-5">
                 <!-- Toolbar -->
-                <div class="d-flex justify-content-between align-items-center p-4 border-bottom bg-white">
-                    <div class="position-relative" style="width: 300px;">
-                        <i class="bi bi-search position-absolute top-50 translate-middle-y text-secondary ms-3"></i>
-                        <input type="text" class="form-control bg-light border-0 ps-5 py-2 rounded-3 text-secondary" placeholder="Cari ID Vaksinasi...">
+                <form method="GET" action="history.php" class="m-0">
+                    <div class="d-flex justify-content-between align-items-center p-4 border-bottom bg-white flex-wrap gap-3">
+                        <div class="position-relative" style="width: 300px;">
+                            <i class="bi bi-search position-absolute top-50 translate-middle-y text-secondary ms-3"></i>
+                            <input type="text" name="search" class="form-control bg-light border-0 ps-5 py-2 rounded-3 text-secondary" 
+                                   placeholder="Cari ID Vaksinasi..." value="<?php echo htmlspecialchars($search); ?>">
+                        </div>
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="dropdown">
+                                <button class="btn btn-link text-dark text-decoration-none fw-semibold d-flex align-items-center gap-2 dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-filter-right fs-5"></i> Filter Sesi: <?php echo ($sort === 'latest' ? 'Terbaru' : 'Terlama'); ?>
+                                </button>
+                                <ul class="dropdown-menu shadow border-0 rounded-3">
+                                    <li><a class="dropdown-item fw-medium py-2 <?php echo $sort === 'latest' ? 'active bg-primary' : ''; ?>" href="?search=<?php echo urlencode($search); ?>&sort=latest">Terbaru</a></li>
+                                    <li><a class="dropdown-item fw-medium py-2 <?php echo $sort === 'oldest' ? 'active bg-primary' : ''; ?>" href="?search=<?php echo urlencode($search); ?>&sort=oldest">Terlama</a></li>
+                                </ul>
+                            </div>
+                            <?php if ($search !== '' || $sort !== 'latest'): ?>
+                                <a href="history.php" class="btn btn-sm text-secondary text-decoration-none small">Reset Filter</a>
+                            <?php endif; ?>
+                            <button type="submit" class="d-none"></button>
+                        </div>
                     </div>
-                    <div>
-                        <button class="btn btn-link text-dark text-decoration-none fw-semibold d-flex align-items-center gap-2">
-                            <i class="bi bi-filter-right fs-5"></i> Filter Sesi
-                        </button>
-                    </div>
-                </div>
+                </form>
 
                 <!-- Table -->
                 <div class="table-responsive">
@@ -179,12 +223,12 @@ krsort($sessions);
                             </tr>
                         </thead>
                         <tbody class="border-top-0">
-                            <?php if (empty($sessions)): ?>
+                            <?php if (empty($paginated_sessions)): ?>
                                 <tr>
-                                    <td colspan="4" class="text-muted py-5 text-center fst-italic">Belum ada sesi rekaman simulasi.</td>
+                                    <td colspan="4" class="text-muted py-5 text-center fst-italic">Tidak ditemukan data yang sesuai pencarian.</td>
                                 </tr>
                             <?php else: ?>
-                                <?php foreach($sessions as $s): ?>
+                                <?php foreach($paginated_sessions as $s): ?>
                                     <tr>
                                         <td class="px-4 py-4 border-light">
                                             <span class="text-primary fw-bold"><?php echo htmlspecialchars($s['name']); ?></span>
@@ -194,7 +238,7 @@ krsort($sessions);
                                                 if ($s['start_time']) {
                                                     $months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
                                                     $m = (int)date('n', (int)($s['start_time'] / 1000)) - 1;
-                                                    echo date('d ', (int)($s['start_time'] / 1000)) . $months[$m] . date(' Y, H:i ', (int)($s['start_time'] / 1000)) . 'WIB';
+                                                    echo date('d ', (int)($s['start_time'] / 1000)) . $months[$m] . date(' Y, H:i ', (int)($s['start_time'] / 1000)) . ' WIB';
                                                 } else {
                                                     echo '<span class="text-muted fst-italic">TBA</span>';
                                                 }
@@ -223,18 +267,50 @@ krsort($sessions);
                     </table>
                 </div>
 
-                <!-- Static Pagination Placeholder -->
-                <div class="d-flex justify-content-between align-items-center p-4 border-top bg-light">
+                <!-- Pagination -->
+                <div class="d-flex justify-content-between align-items-center p-4 border-top bg-light flex-wrap gap-3">
                     <div class="text-secondary" style="font-size: 0.85rem;">
-                        Menampilkan <span class="fw-bold text-dark">Semua sesi</span> riwayat simulasi
+                        <?php if ($total_items > 0): ?>
+                            Menampilkan <span class="fw-bold text-dark"><?php echo ($offset + 1); ?> - <?php echo min($offset + $limit, $total_items); ?></span> dari <span class="fw-bold text-dark"><?php echo $total_items; ?></span> sesi
+                        <?php else: ?>
+                            Tidak ada data untuk ditampilkan
+                        <?php endif; ?>
                     </div>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-white border bg-white shadow-sm fw-bold px-3 py-1 rounded-2 text-secondary"><i class="bi bi-chevron-left"></i></button>
-                        <button class="btn btn-primary fw-bold px-3 py-1 rounded-2 shadow-sm text-white border-0">1</button>
-                        <button class="btn btn-white border bg-white shadow-sm fw-bold px-3 py-1 rounded-2 text-secondary">2</button>
-                        <button class="btn btn-white border bg-white shadow-sm fw-bold px-3 py-1 rounded-2 text-secondary">3</button>
-                        <button class="btn btn-white border bg-white shadow-sm fw-bold px-3 py-1 rounded-2 text-secondary"><i class="bi bi-chevron-right"></i></button>
-                    </div>
+                    <?php if ($total_pages > 1): ?>
+                        <div class="d-flex gap-2">
+                            <!-- Prev -->
+                            <?php if ($page > 1): ?>
+                                <a href="?page=<?php echo ($page - 1); ?>&search=<?php echo urlencode($search); ?>&sort=<?php echo $sort; ?>" 
+                                   class="btn btn-white border bg-white shadow-sm fw-bold px-3 py-1 rounded-2 text-secondary pagination-link">
+                                    <i class="bi bi-chevron-left"></i>
+                                </a>
+                            <?php else: ?>
+                                <button class="btn btn-white border bg-white shadow-sm fw-bold px-3 py-1 rounded-2 text-secondary opacity-50" disabled>
+                                    <i class="bi bi-chevron-left"></i>
+                                </button>
+                            <?php endif; ?>
+
+                            <!-- Pages -->
+                            <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                                <a href="?page=<?php echo $i; ?>&search=<?php echo urlencode($search); ?>&sort=<?php echo $sort; ?>" 
+                                   class="btn <?php echo ($i === $page) ? 'btn-primary' : 'btn-white border bg-white text-secondary'; ?> fw-bold px-3 py-1 rounded-2 shadow-sm border-0 pagination-link">
+                                    <?php echo $i; ?>
+                                </a>
+                            <?php endfor; ?>
+
+                            <!-- Next -->
+                            <?php if ($page < $total_pages): ?>
+                                <a href="?page=<?php echo ($page + 1); ?>&search=<?php echo urlencode($search); ?>&sort=<?php echo $sort; ?>" 
+                                   class="btn btn-white border bg-white shadow-sm fw-bold px-3 py-1 rounded-2 text-secondary pagination-link">
+                                    <i class="bi bi-chevron-right"></i>
+                                </a>
+                            <?php else: ?>
+                                <button class="btn btn-white border bg-white shadow-sm fw-bold px-3 py-1 rounded-2 text-secondary opacity-50" disabled>
+                                    <i class="bi bi-chevron-right"></i>
+                                </button>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -242,5 +318,7 @@ krsort($sessions);
     </main>
 </div>
 
+<!-- Bootstrap 5 JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

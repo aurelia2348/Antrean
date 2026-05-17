@@ -59,7 +59,7 @@ async function loadDESData() {
             if (serviceTimes[i].length === 0) serviceTimes[i] = [1];
         }
 
-        console.log("Max Stage 3:", Math.max(...serviceTimes[3]));
+        renderActualMetrics(sessionData);
 
     } catch (err) {
         console.error("Loading DES data failed", err);
@@ -127,10 +127,17 @@ function simOneRep(config) {
 
         let rawArr = currentTime + inter;
 
+        // Reset hour block counter if we naturally crossed an hour boundary
+        while (rawArr >= currentHourLimit) {
+            currentHourLimit += 60;
+            patientsInHourBlock = 0;
+        }
+
         if (quota > 0) {
             patientsInHourBlock++;
             if (patientsInHourBlock > quota) {
-                // Dorong ke awal jam berikutnya
+                // Quota hit! Push this and subsequent arrivals to the next available hour slot
+                // We advance currentTime to the hour limit, effectively 'stepping' the arrival sequence
                 currentTime = currentHourLimit;
                 currentHourLimit += 60;
                 patientsInHourBlock = 1;
@@ -277,7 +284,7 @@ function simOneRep(config) {
             if (!obsCustomers[i].stages[stage]) continue; // Skip dropped out customers
 
             let s = obsCustomers[i].stages[stage];
-            if (s.waitTime > 0) {
+            if (s.waitTime >= 0) {
                 wSum += s.waitTime;
                 waitCustCount++;
             }
@@ -331,6 +338,40 @@ function calculateStdDev(arr, mean) {
     return Math.sqrt(sumSq / (arr.length - 1));
 }
 
+/**
+ * Returns t-value for 95% confidence level based on degrees of freedom (df)
+ */
+function getStudentT95(df) {
+    if (df <= 0) return 0;
+    // Common lookup table for small df
+    const tTable = {
+        1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571, 
+        6: 2.447, 7: 2.365, 8: 2.306, 9: 2.262, 10: 2.228,
+        15: 2.131, 20: 2.086, 25: 2.060, 30: 2.042, 40: 2.021,
+        50: 2.009, 60: 2.000, 70: 1.994, 80: 1.990, 90: 1.987,
+        100: 1.984, 120: 1.980
+    };
+    
+    // Fix 1: Stability for larger samples (REPS >= 30 implies df >= 29)
+    if (df >= 29) return 1.96;
+
+    if (tTable[df]) return tTable[df];
+    
+    // Find closest or use approximation for df > 120
+    if (df > 120) return 1.96 + (1.58 / df);
+    
+    // Simple interpolation for values between lookup keys
+    let keys = Object.keys(tTable).map(Number).sort((a,b) => a-b);
+    for (let i=0; i<keys.length-1; i++) {
+        if (df > keys[i] && df < keys[i+1]) {
+            let t0 = tTable[keys[i]];
+            let t1 = tTable[keys[i+1]];
+            return t0 + (t1 - t0) * (df - keys[i]) / (keys[i+1] - keys[i]);
+        }
+    }
+    return 1.96;
+}
+
 function averageRepMetrics(repMetrics, reps) {
     let final = {
         stages: { 1: {}, 2: {}, 3: {}, 4: {} },
@@ -377,6 +418,47 @@ function averageRepMetrics(repMetrics, reps) {
 
         let c = final.srvC[stage] || 1;
         s.rho = s.mu > 0 ? (s.lambda / (c * s.mu)) : 0;
+
+        // NEW: Per-stage DES metrics
+        s.W = s.avgWait + s.avgService;
+        
+        // --- CI CALCULATION ---
+        let tVal = getStudentT95(reps - 1);
+        let divisor = Math.sqrt(reps);
+
+        // We need the standard deviation of each metric across the replications
+        let wqVals = [], wVals = [], lqVals = [], lVals = [];
+        
+        repMetrics.forEach(m => {
+            let rStage = m.stages[stage];
+            let rWq = rStage.avgWait;
+            let rW = rStage.avgWait + rStage.avgService;
+            
+            // Fix 3: Use global mean lambda for CI calculation of L/Lq
+            let rLambda = s.lambda; 
+            
+            wqVals.push(rWq);
+            wVals.push(rW);
+            lqVals.push(rLambda * rWq);
+            lVals.push(rLambda * rW);
+        });
+
+        // Compute Means (should match s.avgWait etc, but re-computing for LQ/L clarity)
+        s.Wq = s.avgWait; // existing
+        s.Lq = calculateMean(lqVals);
+        s.L = calculateMean(lVals);
+        
+        // Helper to format CI string [lower , upper]
+        const getCI = (vals, mean) => {
+            let sd = calculateStdDev(vals, mean);
+            let h = tVal * (sd / divisor);
+            return `${formatNum(mean - h)} , ${formatNum(mean + h)}`;
+        };
+
+        s.ciWq = getCI(wqVals, s.Wq);
+        s.ciW = getCI(wVals, s.W);
+        s.ciLq = getCI(lqVals, s.Lq);
+        s.ciL = getCI(lVals, s.L);
     }
 
     final.Wq = sumWq / reps;
@@ -390,12 +472,12 @@ function averageRepMetrics(repMetrics, reps) {
 }
 
 function formatNum(num) {
-    return Number(num).toFixed(4);
+    return Number(num).toFixed(7);
 }
 
 function formatDurationH(mins) {
-    if (!isFinite(mins) || mins < 0) return '0.0000 min';
-    return Number(mins).toFixed(4) + ' min';
+    if (!isFinite(mins) || mins < 0) return '0.0000000 min';
+    return Number(mins).toFixed(7) + ' min';
 }
 
 function getUtilizationClass(rho) {
@@ -448,6 +530,25 @@ function renderDESResults(metrics) {
     document.getElementById('sysLq').innerText = formatNum(metrics.Lq) + " cust";
     document.getElementById('sysL').innerText = formatNum(metrics.L) + " cust";
 
+    // Table: DES Metrics per Stage
+    document.getElementById('desStageMetricsContainer').classList.remove('d-none');
+    let dsmBody = '';
+    for (let i = 1; i <= 4; i++) {
+        let s = metrics.stages[i];
+        dsmBody += `<tr>
+            <td class="fw-bold">Tahap ${i}</td>
+            <td class="text-primary fw-semibold">${formatNum(s.avgWait)} min</td>
+            <td class="text-muted small">${s.ciWq}</td>
+            <td class="text-primary fw-semibold">${formatNum(s.Lq)} cust</td>
+            <td class="text-muted small">${s.ciLq}</td>
+            <td class="text-dark fw-semibold">${formatNum(s.W)} min</td>
+            <td class="text-muted small">${s.ciW}</td>
+            <td class="text-dark fw-semibold">${formatNum(s.L)} cust</td>
+            <td class="text-muted small">${s.ciL}</td>
+        </tr>`;
+    }
+    document.getElementById('desStageMetricsBody').innerHTML = dsmBody;
+
     // Kingman Warning Evaluator
     let cReasons = [];
     let rhoReasons = [];
@@ -492,10 +593,10 @@ function resetDES() {
     document.getElementById('desReps').value = 200;
     document.getElementById('desWarmup').value = 10;
     document.getElementById('desObs').value = 30;
-    
+
     let quotaEl = document.getElementById('desQuota');
     if (quotaEl) quotaEl.value = 0;
-    
+
     for (let i = 1; i <= 4; i++) {
         let srv = document.getElementById('srv' + i);
         if (srv) srv.value = 1;
@@ -506,7 +607,7 @@ function resetDES() {
         pl.classList.remove('d-none');
         pl.classList.add('d-flex');
     }
-    
+
     document.getElementById('desResultsContainer').classList.add('d-none');
     let btm = document.getElementById('desBottomContainer');
     if (btm) btm.classList.add('d-none');
@@ -517,3 +618,66 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btnStartDes').addEventListener('click', runDES);
     document.getElementById('btnResetDes').addEventListener('click', resetDES);
 });
+
+function renderActualMetrics(sessionData) {
+    let actuals = {};
+    for (let stage = 1; stage <= 4; stage++) {
+        let inters = [];
+        let servs = [];
+        let lastArrival = null;
+
+        // Group actual times
+        sessionData.forEach(d => {
+            let h = d.history.find(st => st.stage === stage);
+            if (h) {
+                if (h.masuk_stage && h.keluar_stage) {
+                    servs.push(toMin(h.keluar_stage - h.masuk_stage));
+                }
+                if (h.masuk_queue) {
+                    if (lastArrival !== null) {
+                        inters.push(toMin(h.masuk_queue - lastArrival));
+                    }
+                    lastArrival = h.masuk_queue;
+                }
+            }
+        });
+
+        let meanAi = calculateMean(inters);
+        let stdAi = calculateStdDev(inters, meanAi);
+        let meanSi = calculateMean(servs);
+        let stdSi = calculateStdDev(servs, meanSi);
+
+        let lambda = meanAi > 0 ? (1 / meanAi) : 0;
+        let mu = meanSi > 0 ? (1 / meanSi) : 0;
+
+        actuals[stage] = {
+            Ai: meanAi,
+            SigmaAi: stdAi,
+            CAi: meanAi > 0 ? (stdAi / meanAi) : 0,
+            Si: meanSi,
+            SigmaSi: stdSi,
+            CSi: meanSi > 0 ? (stdSi / meanSi) : 0,
+            lambda: lambda,
+            mu: mu,
+            rho: mu > 0 ? (lambda / (1 * mu)) : 0 // User requested Server 1 for actual
+        };
+    }
+
+    let body = '';
+    for (let i = 1; i <= 4; i++) {
+        let s = actuals[i];
+        body += `<tr>
+            <td class="fw-bold">Tahap ${i}</td>
+            <td>${formatNum(s.Ai)}</td>
+            <td>${formatNum(s.SigmaAi)}</td>
+            <td class="${getCVClass(s.CAi)}">${formatNum(s.CAi)}</td>
+            <td>${formatNum(s.Si)}</td>
+            <td>${formatNum(s.SigmaSi)}</td>
+            <td class="${getCVClass(s.CSi)}">${formatNum(s.CSi)}</td>
+            <td>${formatNum(s.lambda)}</td>
+            <td><span class="${getUtilizationClass(s.rho)}">${formatNum(s.rho)}</span></td>
+            <td>${formatNum(s.mu)}</td>
+        </tr>`;
+    }
+    document.getElementById('actualParamsBody').innerHTML = body;
+}
