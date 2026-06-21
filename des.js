@@ -3,6 +3,7 @@
 let interarrivalSamples = [];
 let serviceTimes = { 1: [], 2: [], 3: [], 4: [] };
 let probNext = { 2: 1, 3: 1, 4: 1 };
+let desSessionData = null;
 
 // Helper to convert to Minutes for metric consistency
 const toMin = ms => ms / 60000;
@@ -13,6 +14,7 @@ async function loadDESData() {
         const allData = await res.json();
 
         let sessionData = allData.filter(d => d.session_id == targetSessionId);
+        desSessionData = sessionData;
 
         let stage1Data = sessionData.filter(d => d.history.find(h => h.stage === 1));
         stage1Data.sort((a, b) => {
@@ -67,7 +69,7 @@ async function loadDESData() {
 }
 
 function runDES() {
-    let reps = parseInt(document.getElementById('desReps').value) || 200;
+    let reps = parseInt(document.getElementById('desReps').value) || 100;
     let warmup = parseInt(document.getElementById('desWarmup').value) || 10;
     let obs = parseInt(document.getElementById('desObs').value) || 30;
 
@@ -93,16 +95,27 @@ function runDES() {
 
     setTimeout(() => {
         let totalCustomers = warmup + obs;
-        let repMetrics = [];
 
-        let config = { warmup, obs, totalCustomers, quota, serversCount };
-
+        // 1. Simulate Kondisi Awal (serversCount = 1 for all stages)
+        let initServersCount = { 1: 1, 2: 1, 3: 1, 4: 1 };
+        let initConfig = { warmup, obs, totalCustomers, quota: 0, serversCount: initServersCount };
+        let repMetricsInit = [];
         for (let r = 0; r < reps; r++) {
-            repMetrics.push(simOneRep(config));
+            repMetricsInit.push(simOneRep(initConfig));
         }
+        let initialMetrics = averageRepMetrics(repMetricsInit, reps);
 
-        let finalMetrics = averageRepMetrics(repMetrics, reps);
+        // 2. Simulate Hasil DES (user-defined serversCount)
+        let config = { warmup, obs, totalCustomers, quota, serversCount };
+        let repMetricsDes = [];
+        for (let r = 0; r < reps; r++) {
+            repMetricsDes.push(simOneRep(config));
+        }
+        let finalMetrics = averageRepMetrics(repMetricsDes, reps);
+
+        // Render both
         renderDESResults(finalMetrics);
+        renderInitialDESResults(initialMetrics);
 
         btn.innerHTML = `🌟 Start Simulation`;
         btn.disabled = false;
@@ -345,28 +358,28 @@ function getStudentT95(df) {
     if (df <= 0) return 0;
     // Common lookup table for small df
     const tTable = {
-        1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571, 
+        1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571,
         6: 2.447, 7: 2.365, 8: 2.306, 9: 2.262, 10: 2.228,
         15: 2.131, 20: 2.086, 25: 2.060, 30: 2.042, 40: 2.021,
         50: 2.009, 60: 2.000, 70: 1.994, 80: 1.990, 90: 1.987,
         100: 1.984, 120: 1.980
     };
-    
+
     // Fix 1: Stability for larger samples (REPS >= 30 implies df >= 29)
     if (df >= 29) return 1.96;
 
     if (tTable[df]) return tTable[df];
-    
+
     // Find closest or use approximation for df > 120
     if (df > 120) return 1.96 + (1.58 / df);
-    
+
     // Simple interpolation for values between lookup keys
-    let keys = Object.keys(tTable).map(Number).sort((a,b) => a-b);
-    for (let i=0; i<keys.length-1; i++) {
-        if (df > keys[i] && df < keys[i+1]) {
+    let keys = Object.keys(tTable).map(Number).sort((a, b) => a - b);
+    for (let i = 0; i < keys.length - 1; i++) {
+        if (df > keys[i] && df < keys[i + 1]) {
             let t0 = tTable[keys[i]];
-            let t1 = tTable[keys[i+1]];
-            return t0 + (t1 - t0) * (df - keys[i]) / (keys[i+1] - keys[i]);
+            let t1 = tTable[keys[i + 1]];
+            return t0 + (t1 - t0) * (df - keys[i]) / (keys[i + 1] - keys[i]);
         }
     }
     return 1.96;
@@ -421,22 +434,22 @@ function averageRepMetrics(repMetrics, reps) {
 
         // NEW: Per-stage DES metrics
         s.W = s.avgWait + s.avgService;
-        
+
         // --- CI CALCULATION ---
         let tVal = getStudentT95(reps - 1);
         let divisor = Math.sqrt(reps);
 
         // We need the standard deviation of each metric across the replications
         let wqVals = [], wVals = [], lqVals = [], lVals = [];
-        
+
         repMetrics.forEach(m => {
             let rStage = m.stages[stage];
             let rWq = rStage.avgWait;
             let rW = rStage.avgWait + rStage.avgService;
-            
+
             // Fix 3: Use global mean lambda for CI calculation of L/Lq
-            let rLambda = s.lambda; 
-            
+            let rLambda = s.lambda;
+
             wqVals.push(rWq);
             wVals.push(rW);
             lqVals.push(rLambda * rWq);
@@ -447,7 +460,7 @@ function averageRepMetrics(repMetrics, reps) {
         s.Wq = s.avgWait; // existing
         s.Lq = calculateMean(lqVals);
         s.L = calculateMean(lVals);
-        
+
         // Helper to format CI string [lower , upper]
         const getCI = (vals, mean) => {
             let sd = calculateStdDev(vals, mean);
@@ -492,7 +505,8 @@ function getCVClass(cv) {
 }
 
 function renderDESResults(metrics) {
-    document.getElementById('desResultsContainer').classList.remove('d-none');
+    let _rc = document.getElementById('desResultsContainer');
+    if (_rc) _rc.classList.remove('d-none');
 
     // Table 1
     let t1Body = '';
@@ -590,7 +604,7 @@ function renderDESResults(metrics) {
 }
 
 function resetDES() {
-    document.getElementById('desReps').value = 200;
+    document.getElementById('desReps').value = 100;
     document.getElementById('desWarmup').value = 10;
     document.getElementById('desObs').value = 30;
 
@@ -608,9 +622,49 @@ function resetDES() {
         pl.classList.add('d-flex');
     }
 
-    document.getElementById('desResultsContainer').classList.add('d-none');
     let btm = document.getElementById('desBottomContainer');
     if (btm) btm.classList.add('d-none');
+
+    // Reset Hasil DES card values to placeholder
+    let elSysWq = document.getElementById('sysWq');
+    let elSysW = document.getElementById('sysW');
+    let elSysLq = document.getElementById('sysLq');
+    let elSysL = document.getElementById('sysL');
+    if (elSysWq) elSysWq.innerText = '—';
+    if (elSysW) elSysW.innerText = '—';
+    if (elSysLq) elSysLq.innerText = '—';
+    if (elSysL) elSysL.innerText = '—';
+
+    let t1BodyEl = document.getElementById('t1Body');
+    if (t1BodyEl) {
+        t1BodyEl.innerHTML = `
+            <tr>
+                <td class="fw-bold">Tahap 1</td>
+                <td>—</td>
+                <td>—</td>
+            </tr>
+            <tr>
+                <td class="fw-bold">Tahap 2</td>
+                <td>—</td>
+                <td>—</td>
+            </tr>
+            <tr>
+                <td class="fw-bold">Tahap 3</td>
+                <td>—</td>
+                <td>—</td>
+            </tr>
+            <tr>
+                <td class="fw-bold">Tahap 4</td>
+                <td>—</td>
+                <td>—</td>
+            </tr>
+        `;
+    }
+
+    // Restore Kondisi Awal static actual values
+    if (desSessionData) {
+        renderActualMetrics(desSessionData);
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -680,4 +734,100 @@ function renderActualMetrics(sessionData) {
         </tr>`;
     }
     document.getElementById('actualParamsBody').innerHTML = body;
+
+    // ============================================================
+    // TAMBAHAN: Populate Kondisi Awal cards & per-stage table
+    // Kalkulasi ini menggunakan data actual dari sessionData
+    // TIDAK mengubah apapun di atas — hanya menambah output baru
+    // ============================================================
+
+    // Hitung avg wait & service per stage dari data aktual
+    let initWaitPerStage = { 1: [], 2: [], 3: [], 4: [] };
+    let initServicePerStage = { 1: [], 2: [], 3: [], 4: [] };
+
+    sessionData.forEach(d => {
+        d.history.forEach(h => {
+            if (h.stage >= 1 && h.stage <= 4) {
+                if (h.masuk_queue && h.masuk_stage) {
+                    let wt = toMin(h.masuk_stage - h.masuk_queue);
+                    if (wt >= 0) initWaitPerStage[h.stage].push(wt);
+                }
+                if (h.masuk_stage && h.keluar_stage) {
+                    let srv = toMin(h.keluar_stage - h.masuk_stage);
+                    if (srv >= 0) initServicePerStage[h.stage].push(srv);
+                }
+            }
+        });
+    });
+
+    // Per Stage Performance — Kondisi Awal table
+    let initStageHtml = '';
+    for (let i = 1; i <= 4; i++) {
+        let avgWait = initWaitPerStage[i].length > 0 ? calculateMean(initWaitPerStage[i]) : 0;
+        let avgServ = initServicePerStage[i].length > 0 ? calculateMean(initServicePerStage[i]) : 0;
+        initStageHtml += `<tr>
+            <td class="fw-bold text-success">Tahap ${i}</td>
+            <td class="text-success fw-semibold">${formatDurationH(avgWait)}</td>
+            <td class="text-info fw-semibold">${formatDurationH(avgServ)}</td>
+        </tr>`;
+    }
+    let initStageBodyEl = document.getElementById('initStageBody');
+    if (initStageBodyEl) initStageBodyEl.innerHTML = initStageHtml;
+
+    // Overall System Metrics — Kondisi Awal cards
+    // Wq = rata-rata total waiting time per pasien (sum semua stage)
+    // W  = rata-rata total time in system per pasien (wait + service semua stage)
+    let wqSum = 0, wSum = 0, count = 0;
+    sessionData.forEach(d => {
+        let patWq = 0, patW = 0, hasData = false;
+        d.history.forEach(h => {
+            if (h.masuk_queue && h.masuk_stage) {
+                patWq += toMin(h.masuk_stage - h.masuk_queue);
+                hasData = true;
+            }
+            if (h.masuk_queue && h.keluar_stage) {
+                patW += toMin(h.keluar_stage - h.masuk_queue);
+            }
+        });
+        if (hasData) { wqSum += patWq; wSum += patW; count++; }
+    });
+
+    let initWq = count > 0 ? (wqSum / count) : 0;
+    let initW  = count > 0 ? (wSum  / count) : 0;
+    // Lq & L via Little's Law: L = λ × W (gunakan lambda stage 1)
+    let lam1 = actuals[1].lambda;
+    let initLq = lam1 * initWq;
+    let initL  = lam1 * initW;
+
+    let elIWq = document.getElementById('initWq');
+    let elIW  = document.getElementById('initW');
+    let elILq = document.getElementById('initLq');
+    let elIL  = document.getElementById('initL');
+    if (elIWq) elIWq.innerText = formatDurationH(initWq);
+    if (elIW)  elIW.innerText  = formatDurationH(initW);
+    if (elILq) elILq.innerText = formatNum(initLq) + ' cust';
+    if (elIL)  elIL.innerText  = formatNum(initL)  + ' cust';
 }
+
+function renderInitialDESResults(metrics) {
+    let elIWq = document.getElementById('initWq');
+    let elIW  = document.getElementById('initW');
+    let elILq = document.getElementById('initLq');
+    let elIL  = document.getElementById('initL');
+    if (elIWq) elIWq.innerText = formatDurationH(metrics.Wq);
+    if (elIW)  elIW.innerText  = formatDurationH(metrics.W);
+    if (elILq) elILq.innerText = formatNum(metrics.Lq) + ' cust';
+    if (elIL)  elIL.innerText  = formatNum(metrics.L)  + ' cust';
+
+    let initStageHtml = '';
+    for (let i = 1; i <= 4; i++) {
+        initStageHtml += `<tr>
+            <td class="fw-bold text-success">Tahap ${i}</td>
+            <td class="text-success fw-semibold">${formatDurationH(metrics.stages[i].avgWait)}</td>
+            <td class="text-info fw-semibold">${formatDurationH(metrics.stages[i].avgService)}</td>
+        </tr>`;
+    }
+    let initStageBodyEl = document.getElementById('initStageBody');
+    if (initStageBodyEl) initStageBodyEl.innerHTML = initStageHtml;
+}
+

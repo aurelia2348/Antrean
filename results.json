@@ -2183,5 +2183,67 @@
             }
         ],
         "session_id": 6
+    },
+    {
+        "id": 1,
+        "selesai": 1782027916099,
+        "history": [
+            {
+                "stage": 1,
+                "masuk_queue": 1782027898607,
+                "masuk_stage": 1782027898611,
+                "keluar_stage": 1782027904135
+            },
+            {
+                "stage": 2,
+                "masuk_queue": 1782027904135,
+                "masuk_stage": 1782027904155,
+                "keluar_stage": 1782027908427
+            },
+            {
+                "stage": 3,
+                "masuk_queue": 1782027908427,
+                "masuk_stage": 1782027908429,
+                "keluar_stage": 1782027912387
+            },
+            {
+                "stage": 4,
+                "masuk_queue": 1782027912387,
+                "masuk_stage": 1782027912390,
+                "keluar_stage": 1782027916099
+            }
+        ],
+        "session_id": 19
+    },
+    {
+        "id": 2,
+        "selesai": 1782027917429,
+        "history": [
+            {
+                "stage": 1,
+                "masuk_queue": 1782027901396,
+                "masuk_stage": 1782027904158,
+                "keluar_stage": 1782027905219
+            },
+            {
+                "stage": 2,
+                "masuk_queue": 1782027905219,
+                "masuk_stage": 1782027908431,
+                "keluar_stage": 1782027911058
+            },
+            {
+                "stage": 3,
+                "masuk_queue": 1782027911058,
+                "masuk_stage": 1782027912393,
+                "keluar_stage": 1782027914392
+            },
+            {
+                "stage": 4,
+                "masuk_queue": 1782027914392,
+                "masuk_stage": 1782027916106,
+                "keluar_stage": 1782027917429
+            }
+        ],
+        "session_id": 19
     }
 ]
