@@ -186,14 +186,94 @@ if ($simMax > $simMin && $simMin !== PHP_INT_MAX) {
         .report-card {
             border-radius: 20px;
             background: white;
-            box-shadow: var(--card-shadow);
-            border: 1px solid rgba(226, 232, 240, 0.5);
-            transition: var(--transition-smooth);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            border: 1px solid transparent;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .report-card:hover {
-            box-shadow: var(--card-shadow-hover);
-            transform: translateY(-2px);
+            transform: translateY(-5px);
+            box-shadow: 0 12px 20px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+        }
+
+        /* Shine effect on hover */
+        .report-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -150%;
+            width: 60%;
+            height: 100%;
+            background: linear-gradient(to right,
+                    rgba(255, 255, 255, 0) 0%,
+                    rgba(255, 255, 255, 0.3) 30%,
+                    rgba(255, 255, 255, 0.6) 50%,
+                    rgba(255, 255, 255, 0.3) 70%,
+                    rgba(255, 255, 255, 0) 100%);
+            transform: skewX(-25deg);
+            transition: none;
+            pointer-events: none;
+        }
+
+        .report-card:hover::after {
+            left: 150%;
+            transition: left 1.5s cubic-bezier(0.3, 1, 0.3, 1);
+        }
+
+        /* Green card hover border and glow */
+        .card-green-glow:hover {
+            border-color: #10b981 !important;
+            box-shadow: 0 12px 24px -5px rgba(16, 185, 129, 0.18), 0 4px 12px -2px rgba(16, 185, 129, 0.12) !important;
+        }
+
+        /* Blue card hover border and glow */
+        .card-blue-glow:hover {
+            border-color: #3b82f6 !important;
+            box-shadow: 0 12px 24px -5px rgba(59, 130, 246, 0.18), 0 4px 12px -2px rgba(59, 130, 246, 0.12) !important;
+        }
+
+        /* Dark card for inputs */
+        .report-card-dark {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+            border: 1px solid #334155 !important;
+            color: #f8fafc;
+        }
+
+        .report-card-dark:hover {
+            border-color: #3b82f6 !important;
+            box-shadow: 0 12px 24px -5px rgba(59, 130, 246, 0.25), 0 4px 12px -2px rgba(59, 130, 246, 0.15) !important;
+        }
+
+        .report-card-dark h6 {
+            color: #ffffff !important;
+        }
+
+        .report-card-dark h6 i {
+            color: #3b82f6 !important;
+        }
+
+        .report-card-dark label,
+        .report-card-dark .form-label {
+            color: #94a3b8 !important;
+        }
+
+        .report-card-dark input {
+            background-color: #1e293b !important;
+            border: 1px solid #334155 !important;
+            color: #ffffff !important;
+            transition: all 0.2s ease;
+        }
+
+        .report-card-dark input:focus {
+            background-color: #0f172a !important;
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4) !important;
+        }
+
+        .report-card-dark .text-secondary {
+            color: #94a3b8 !important;
         }
 
         .text-purple {
@@ -203,14 +283,14 @@ if ($simMax > $simMin && $simMin !== PHP_INT_MAX) {
         .text-warning-red {
             color: var(--danger) !important;
         }
-        
+
         .form-control {
             border-radius: 12px;
             border: 1px solid var(--border-color);
             padding: 0.75rem 1rem;
             transition: var(--transition-smooth);
         }
-        
+
         .form-control:focus {
             border-color: var(--primary);
             box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15);
@@ -493,7 +573,9 @@ if ($simMax > $simMin && $simMin !== PHP_INT_MAX) {
                         </tr>
                     </thead>
                     <tbody id="actualParamsBody" class="border-top-0">
-                        <tr><td colspan="10" class="py-4 text-muted fst-italic">Loading actual data analysis...</td></tr>
+                        <tr>
+                            <td colspan="10" class="py-4 text-muted fst-italic">Loading actual data analysis...</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -532,7 +614,7 @@ if ($simMax > $simMin && $simMin !== PHP_INT_MAX) {
             <div class="row g-4 mb-4">
                 <!-- Left Column: SYSTEM INPUTS -->
                 <div class="col-lg-4">
-                    <div class="report-card p-4 h-100" style="background-color: #f8fafc; border: 1px solid #f1f5f9;">
+                    <div class="report-card report-card-dark p-4 h-100">
                         <h6 class="fw-bold text-dark mb-4 d-flex align-items-center gap-2"
                             style="font-size: 0.85rem; letter-spacing: 1px;">
                             <i class="bi bi-sliders text-primary"></i> SYSTEM INPUTS
@@ -542,7 +624,7 @@ if ($simMax > $simMin && $simMin !== PHP_INT_MAX) {
                             <div class="col-6">
                                 <label class="form-label text-secondary fw-bold text-uppercase"
                                     style="font-size: 0.65rem; letter-spacing: 1px;">REPS (REPLIKASI)</label>
-                                <input type="number" id="desReps" class="form-control border-0 shadow-sm" value="200"
+                                <input type="number" id="desReps" class="form-control border-0 shadow-sm" value="100"
                                     style="padding: 0.75rem;">
                             </div>
                             <div class="col-6">
@@ -600,86 +682,153 @@ if ($simMax > $simMin && $simMin !== PHP_INT_MAX) {
                     </div>
                 </div>
 
-                <!-- Right Column: Results Container -->
+                <!-- Right Column: Kondisi Awal + DES Results -->
                 <div class="col-lg-8 position-relative">
-                    <div id="desResultsContainer" class="d-none animate-fade-in w-100 h-100">
 
-                        <!-- Table 3 -->
-                        <div class="report-card p-4 mb-4" style="border: 1px solid #f1f5f9;">
-                            <h6 class="text-secondary fw-bold text-uppercase mb-4"
-                                style="font-size: 0.7rem; letter-spacing: 1.5px;">OVERALL SYSTEM METRICS</h6>
-                            <div class="row align-items-center">
-                                <div class="col-6 col-md-3 mb-3 mb-md-0">
-                                    <div class="text-secondary fw-bold text-uppercase mb-1"
-                                        style="font-size: 0.6rem; letter-spacing: 0.5px;">WQ (QUEUE TIME)</div>
-                                    <div class="fw-bold" style="font-size: 2rem; color: #2563eb; line-height: 1;">
-                                        <span id="sysWq">0</span>
-                                    </div>
+                    <!-- OVERALL SYSTEM METRICS label -->
+                    <div class="fw-bold text-secondary text-uppercase mb-3" style="font-size:0.7rem; letter-spacing:1.5px;">OVERALL SYSTEM METRICS</div>
+
+                    <!-- 2 cards: Kondisi Awal (kiri) + DES Result (kanan) -->
+                    <div class="row g-3 mb-3">
+                        <!-- ===== KONDISI AWAL: Overall Metrics ===== -->
+                        <div class="col-md-6">
+                            <div class="report-card card-green-glow p-4 h-100" style="border: 1px solid #d1fae5; background: linear-gradient(135deg,#f0fdf4 0%,#ffffff 100%);">
+                                <div class="d-flex align-items-center gap-2 mb-3">
+                                    <span class="badge fw-bold" style="background:#d1fae5;color:#065f46;font-size:0.58rem;letter-spacing:1px;">KONDISI AWAL</span>
+                                    <span class="text-muted" style="font-size:0.62rem;">Data aktual (sebelum input)</span>
                                 </div>
-                                <div class="col-6 col-md-3 mb-3 mb-md-0">
-                                    <div class="text-secondary fw-bold text-uppercase mb-1"
-                                        style="font-size: 0.6rem; letter-spacing: 0.5px;">W (SYSTEM TIME)</div>
-                                    <div class="fw-bold text-dark" style="font-size: 2rem; line-height: 1;">
-                                        <span id="sysW">0</span>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <div class="text-secondary fw-bold text-uppercase mb-1" style="font-size:0.55rem;letter-spacing:0.5px;">WQ (QUEUE TIME)</div>
+                                        <div class="fw-bold" style="font-size:1.5rem;color:#059669;line-height:1;"><span id="initWq">—</span></div>
                                     </div>
-                                </div>
-                                <div class="col-6 col-md-3">
-                                    <div class="text-secondary fw-bold text-uppercase mb-1"
-                                        style="font-size: 0.6rem; letter-spacing: 0.5px;">LQ (AVG QUEUE)</div>
-                                    <div class="fw-bold" style="font-size: 2rem; color: #3b82f6; line-height: 1;">
-                                        <span id="sysLq">0</span>
+                                    <div class="col-6">
+                                        <div class="text-secondary fw-bold text-uppercase mb-1" style="font-size:0.55rem;letter-spacing:0.5px;">W (SYSTEM TIME)</div>
+                                        <div class="fw-bold text-dark" style="font-size:1.5rem;line-height:1;"><span id="initW">—</span></div>
                                     </div>
-                                </div>
-                                <div class="col-6 col-md-3">
-                                    <div class="text-secondary fw-bold text-uppercase mb-1"
-                                        style="font-size: 0.6rem; letter-spacing: 0.5px;">L (AVG SYSTEM)</div>
-                                    <div class="fw-bold text-dark" style="font-size: 2rem; line-height: 1;">
-                                        <span id="sysL">0</span>
+                                    <div class="col-6 mt-2">
+                                        <div class="text-secondary fw-bold text-uppercase mb-1" style="font-size:0.55rem;letter-spacing:0.5px;">LQ (AVG QUEUE)</div>
+                                        <div class="fw-bold" style="font-size:1.5rem;color:#059669;line-height:1;"><span id="initLq">—</span></div>
+                                    </div>
+                                    <div class="col-6 mt-2">
+                                        <div class="text-secondary fw-bold text-uppercase mb-1" style="font-size:0.55rem;letter-spacing:0.5px;">L (AVG SYSTEM)</div>
+                                        <div class="fw-bold text-dark" style="font-size:1.5rem;line-height:1;"><span id="initL">—</span></div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Table 1 -->
-                        <div class="report-card p-4" style="border: 1px solid #f1f5f9; min-height: 250px;">
-                            <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h6 class="text-secondary fw-bold text-uppercase mb-0"
-                                    style="font-size: 0.7rem; letter-spacing: 1.5px;">PER STAGE PERFORMANCE
-                                </h6>
-                                <i class="bi bi-layout-text-window-reverse text-secondary"
-                                    style="font-size: 1.2rem;"></i>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table mb-0 align-middle">
-                                    <thead>
-                                        <tr class="text-secondary fw-bold text-uppercase"
-                                            style="font-size: 0.65rem; letter-spacing: 0.5px; border-bottom: 2px solid #f1f5f9;">
-                                            <th class="ps-0 border-0 pb-3"
-                                                style="font-weight: 700 !important; color: #64748b;">STAGE ID</th>
-                                            <th class="border-0 pb-3"
-                                                style="font-weight: 700 !important; color: #64748b;">AVG WAITING
-                                                TIME<br>(MIN)</th>
-                                            <th class="border-0 pb-3"
-                                                style="font-weight: 700 !important; color: #64748b;">AVG SERVICE
-                                                TIME<br>(MIN)</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="t1Body">
-                                        <!-- Populated automatically -->
-                                    </tbody>
-                                </table>
+                        <!-- ===== HASIL DES: Overall Metrics (EXISTING — tidak diubah) ===== -->
+                        <div class="col-md-6">
+                            <div class="report-card card-blue-glow p-4 h-100" style="border: 1px solid #dbeafe; background: linear-gradient(135deg,#eff6ff 0%,#ffffff 100%);">
+                                <div class="d-flex align-items-center gap-2 mb-3">
+                                    <span class="badge fw-bold" style="background:#dbeafe;color:#1e40af;font-size:0.58rem;letter-spacing:1px;">HASIL DES</span>
+                                    <span class="text-muted" style="font-size:0.62rem;">Berubah sesuai input</span>
+                                </div>
+                                <!-- existing sysWq/W/Lq/L spans — tidak diubah sama sekali -->
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <div class="text-secondary fw-bold text-uppercase mb-1" style="font-size:0.55rem;letter-spacing:0.5px;">WQ (QUEUE TIME)</div>
+                                        <div class="fw-bold" style="font-size:1.5rem;color:#2563eb;line-height:1;"><span id="sysWq">—</span></div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="text-secondary fw-bold text-uppercase mb-1" style="font-size:0.55rem;letter-spacing:0.5px;">W (SYSTEM TIME)</div>
+                                        <div class="fw-bold text-dark" style="font-size:1.5rem;line-height:1;"><span id="sysW">—</span></div>
+                                    </div>
+                                    <div class="col-6 mt-2">
+                                        <div class="text-secondary fw-bold text-uppercase mb-1" style="font-size:0.55rem;letter-spacing:0.5px;">LQ (AVG QUEUE)</div>
+                                        <div class="fw-bold" style="font-size:1.5rem;color:#3b82f6;line-height:1;"><span id="sysLq">—</span></div>
+                                    </div>
+                                    <div class="col-6 mt-2">
+                                        <div class="text-secondary fw-bold text-uppercase mb-1" style="font-size:0.55rem;letter-spacing:0.5px;">L (AVG SYSTEM)</div>
+                                        <div class="fw-bold text-dark" style="font-size:1.5rem;line-height:1;"><span id="sysL">—</span></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-
                     </div>
 
-                    <!-- Initial State Placeholder -->
+                    <!-- PER STAGE PERFORMANCE label -->
+                    <div class="fw-bold text-secondary text-uppercase mb-3" style="font-size:0.7rem; letter-spacing:1.5px;">PER STAGE PERFORMANCE</div>
+
+                    <!-- 2 tables: Kondisi Awal (kiri) + DES Result (kanan) -->
+                    <div class="row g-3 mb-3">
+                        <!-- ===== KONDISI AWAL: Per Stage ===== -->
+                        <div class="col-md-6">
+                            <div class="report-card card-green-glow p-4 h-100" style="border: 1px solid #d1fae5; background: linear-gradient(135deg,#f0fdf4 0%,#ffffff 100%);">
+                                <div class="d-flex align-items-center gap-2 mb-3">
+                                    <span class="badge fw-bold" style="background:#d1fae5;color:#065f46;font-size:0.58rem;letter-spacing:1px;">KONDISI AWAL</span>
+                                    <span class="text-muted" style="font-size:0.62rem;">Data aktual (sebelum input)</span>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table mb-0 align-middle text-center" style="font-size:0.82rem;">
+                                        <thead>
+                                            <tr class="text-uppercase fw-bold" style="font-size:0.6rem;letter-spacing:0.5px;border-bottom:2px solid #d1fae5;">
+                                                <th class="border-0 pb-2" style="color:#064e3b;">STAGE ID</th>
+                                                <th class="border-0 pb-2" style="color:#064e3b;">AVG WAITING<br>TIME (MIN)</th>
+                                                <th class="border-0 pb-2" style="color:#064e3b;">AVG SERVICE<br>TIME (MIN)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="initStageBody">
+                                            <tr>
+                                                <td colspan="3" class="text-muted fst-italic py-3 text-center small">Memuat...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ===== HASIL DES: Per Stage (EXISTING t1Body — tidak diubah) ===== -->
+                        <div class="col-md-6">
+                            <div class="report-card card-blue-glow p-4 h-100" style="border: 1px solid #dbeafe; background: linear-gradient(135deg,#eff6ff 0%,#ffffff 100%);">
+                                <div class="d-flex align-items-center gap-2 mb-3">
+                                    <span class="badge fw-bold" style="background:#dbeafe;color:#1e40af;font-size:0.58rem;letter-spacing:1px;">HASIL DES</span>
+                                    <span class="text-muted" style="font-size:0.62rem;">Berubah sesuai input</span>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table mb-0 align-middle text-center" style="font-size:0.82rem;">
+                                        <thead>
+                                            <tr class="text-uppercase fw-bold" style="font-size:0.6rem;letter-spacing:0.5px;border-bottom:2px solid #dbeafe;">
+                                                <th class="border-0 pb-2" style="color:#1e3a8a;">STAGE ID</th>
+                                                <th class="border-0 pb-2" style="color:#1e3a8a;">AVG WAITING<br>TIME (MIN)</th>
+                                                <th class="border-0 pb-2" style="color:#1e3a8a;">AVG SERVICE<br>TIME (MIN)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="t1Body">
+                                            <tr>
+                                                <td class="fw-bold">Tahap 1</td>
+                                                <td>—</td>
+                                                <td>—</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="fw-bold">Tahap 2</td>
+                                                <td>—</td>
+                                                <td>—</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="fw-bold">Tahap 3</td>
+                                                <td>—</td>
+                                                <td>—</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="fw-bold">Tahap 4</td>
+                                                <td>—</td>
+                                                <td>—</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Placeholder shown before DES runs -->
                     <div id="desPlaceholder"
                         class="report-card d-flex flex-column justify-content-center align-items-center text-secondary w-100 mx-auto"
-                        style="min-height: 400px; border: 2px dashed #e2e8f0; background-color: #f8fafc;">
-                        <i class="bi bi-box-seam" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 1rem;"></i>
-                        <p class="mt-3 text-muted fw-semibold" style="letter-spacing: 0.5px;">Ready to run simulation.
-                        </p>
+                        style="min-height: 200px; border: 2px dashed #e2e8f0; background-color: #f8fafc;">
+                        <i class="bi bi-box-seam" style="font-size: 2.5rem; color: #cbd5e1; margin-bottom: 0.75rem;"></i>
+                        <p class="mt-2 text-muted fw-semibold mb-0" style="letter-spacing: 0.5px;">Klik START SIMULATION untuk melihat Hasil DES</p>
                     </div>
                 </div>
             </div>
@@ -846,23 +995,26 @@ if ($simMax > $simMin && $simMin !== PHP_INT_MAX) {
 
         // UI Enhancements over DES.js
         document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('btnStartDes').addEventListener('click', function () {
-                // Fix: remove d-flex before adding d-none to hide it completely
+            document.getElementById('btnStartDes').addEventListener('click', function() {
+                // Hide placeholder once simulation starts
                 let pl = document.getElementById('desPlaceholder');
-                pl.classList.remove('d-flex');
-                pl.classList.add('d-none');
-
-                document.getElementById('desResultsContainer').classList.remove('d-none');
-                document.getElementById('desBottomContainer').classList.remove('d-none');
+                if (pl) {
+                    pl.classList.remove('d-flex');
+                    pl.classList.add('d-none');
+                }
+                // Show bottom containers (Queue Params, DES Stage Metrics, Alerts)
+                let btm = document.getElementById('desBottomContainer');
+                if (btm) btm.classList.remove('d-none');
             });
 
-            document.getElementById('btnResetDes').addEventListener('click', function () {
+            document.getElementById('btnResetDes').addEventListener('click', function() {
                 let pl = document.getElementById('desPlaceholder');
-                pl.classList.remove('d-none');
-                pl.classList.add('d-flex');
-
-                document.getElementById('desResultsContainer').classList.add('d-none');
-                document.getElementById('desBottomContainer').classList.add('d-none');
+                if (pl) {
+                    pl.classList.remove('d-none');
+                    pl.classList.add('d-flex');
+                }
+                let btm = document.getElementById('desBottomContainer');
+                if (btm) btm.classList.add('d-none');
             });
         });
     </script>
