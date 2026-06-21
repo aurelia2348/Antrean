@@ -37,53 +37,46 @@ class QueueSimulation {
         this.stagesContainer.innerHTML = '';
         for (let i = 1; i <= this.totalStages; i++) {
             const card = document.createElement('div');
-            card.className = 'card border-0 stage-card bg-white h-100 d-flex flex-column';
-            card.style.width = '300px';
-            card.style.flexShrink = '0';
+            card.className = 'card border-0 stage-card-horizontal bg-white flex-grow-1';
             card.innerHTML = `
-                <!-- Header -->
-                <div class="d-flex justify-content-between align-items-center px-4 pt-4 pb-3">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; border: 1px solid rgba(79,70,229,0.15);">
-                            <i class="bi ${this.getStageIcon(i)} fs-5"></i>
-                        </div>
-                        <div>
-                            <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.95rem; letter-spacing: -0.2px;">Tahap ${i}</h6>
-                            <small class="text-secondary fw-semibold" style="font-size: 0.75rem;">${this.getStageName(i)}</small>
-                        </div>
+                <!-- Stage Info -->
+                <div class="d-flex align-items-center gap-3" style="width: 220px; flex-shrink: 0;">
+                    <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; border: 1px solid rgba(79,70,229,0.15); flex-shrink: 0;">
+                        <i class="bi ${this.getStageIcon(i)} fs-4"></i>
                     </div>
-                    <span id="badge-status-${i}" class="badge rounded-pill text-uppercase px-3 py-2" style="font-size: 0.6rem; letter-spacing: 0.7px;">IDLE</span>
-                </div>
-
-                <!-- Body -->
-                <div class="d-flex flex-column gap-3 flex-grow-1 justify-content-center px-4 pb-3">
-                    <!-- Queue Box -->
-                    <div class="metric-box py-3">
-                        <div class="metric-label">QUEUE</div>
-                        <div id="queue-display-${i}" class="metric-value-queue d-flex flex-wrap justify-content-center align-items-center gap-1" style="min-height: 48px;">
-                            <span class="text-secondary opacity-25">-</span>
-                        </div>
-                    </div>
-                    
-                    <!-- Stage Box -->
-                    <div id="stage-box-${i}" class="metric-box py-3 transition-all">
-                        <div class="metric-label">STAGE</div>
-                        <div id="stage-display-${i}" class="metric-value-stage d-flex flex-wrap justify-content-center align-items-center" style="min-height: 48px;">
-                            <span class="text-secondary opacity-25">-</span>
-                        </div>
+                    <div class="overflow-hidden">
+                        <h6 class="fw-bold mb-1 text-dark text-truncate" style="font-size: 0.95rem; letter-spacing: -0.2px;">Tahap ${i}</h6>
+                        <div class="text-secondary fw-semibold text-truncate mb-2" style="font-size: 0.75rem; max-width: 150px;">${this.getStageName(i)}</div>
+                        <span id="badge-status-${i}" class="badge rounded-pill text-uppercase px-2.5 py-1.5" style="font-size: 0.6rem; letter-spacing: 0.7px;">IDLE</span>
                     </div>
                 </div>
 
-                <!-- Footer Buttons -->
-                <div class="d-flex gap-2 px-4 pb-4 mt-auto">
-                    ${i > 1 ? `
-                    <button id="btn-keluar-${i}" class="btn btn-light flex-grow-1 fw-bold text-secondary text-uppercase py-2 shadow-sm text-nowrap" style="font-size: 0.8rem;" onclick="sim.leaveStage(${i}, false)">
-                        Keluar
+                <!-- Queue Box -->
+                <div class="metric-box-horizontal flex-grow-1 mx-3" style="min-width: 150px;">
+                    <div class="metric-label">QUEUE</div>
+                    <div id="queue-display-${i}" class="metric-value-queue">
+                        <span class="text-secondary opacity-25">-</span>
+                    </div>
+                </div>
+
+                <!-- Stage Box -->
+                <div id="stage-box-${i}" class="metric-box-horizontal" style="width: 180px; flex-shrink: 0;">
+                    <div class="metric-label" style="width: 50px;">STAGE</div>
+                    <div id="stage-display-${i}" class="metric-value-stage">
+                        <span class="text-secondary opacity-25">-</span>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="d-flex flex-column gap-2 ms-3 justify-content-center" style="width: 130px; flex-shrink: 0;">
+                    ${i < 4 ? `
+                    <button id="btn-lanjut-${i}" class="btn btn-primary w-100 fw-bold text-uppercase py-2 shadow-sm text-nowrap" style="font-size: 0.75rem;" onclick="sim.leaveStage(${i}, true)">
+                        Lanjut
                     </button>
                     ` : ''}
-                    ${i < 4 ? `
-                    <button id="btn-lanjut-${i}" class="btn btn-primary flex-grow-1 fw-bold text-uppercase py-2 shadow-sm text-nowrap" style="font-size: 0.8rem;" onclick="sim.leaveStage(${i}, true)">
-                        Lanjut
+                    ${i > 1 ? `
+                    <button id="btn-keluar-${i}" class="btn btn-light w-100 fw-bold text-secondary text-uppercase py-2 shadow-sm text-nowrap" style="font-size: 0.75rem;" onclick="sim.leaveStage(${i}, false)">
+                        Keluar
                     </button>
                     ` : ''}
                 </div>

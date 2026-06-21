@@ -295,6 +295,62 @@ if ($simMax > $simMin && $simMin !== PHP_INT_MAX) {
             border-color: var(--primary);
             box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15);
         }
+
+        /* Custom Header Styling untuk Raw Execution Data */
+        .th-neutral {
+            background-color: #0f172a !important;
+            border-top: 4px solid #64748b !important;
+            color: #f8fafc !important;
+        }
+        .th-interarrival {
+            background-color: #0c1a19 !important;
+            border-top: 4px solid #0d9488 !important;
+            color: #2dd4bf !important;
+        }
+        .th-waiting {
+            background-color: #101026 !important;
+            border-top: 4px solid #6366f1 !important;
+            color: #a5b4fc !important;
+        }
+        .th-service {
+            background-color: #0b1426 !important;
+            border-top: 4px solid #3b82f6 !important;
+            color: #93c5fd !important;
+        }
+
+        /* Sub-headers styling */
+        .th-sub-inter {
+            background-color: #122624 !important;
+            color: #99f6e4 !important;
+            border-top: 1px solid #14b8a6 !important;
+            font-size: 0.7rem;
+        }
+        .th-sub-waiting {
+            background-color: #161633 !important;
+            color: #c7d2fe !important;
+            border-top: 1px solid #6366f1 !important;
+            font-size: 0.7rem;
+        }
+        .th-sub-waiting-total {
+            background-color: #1e1b4b !important;
+            color: #e0e7ff !important;
+            border-top: 1px solid #818cf8 !important;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+        .th-sub-service {
+            background-color: #101d36 !important;
+            color: #bfdbfe !important;
+            border-top: 1px solid #3b82f6 !important;
+            font-size: 0.7rem;
+        }
+        .th-sub-service-total {
+            background-color: #172554 !important;
+            color: #dbeafe !important;
+            border-top: 1px solid #60a5fa !important;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
     </style>
 </head>
 
@@ -359,31 +415,31 @@ if ($simMax > $simMin && $simMin !== PHP_INT_MAX) {
                 <table class="table table-custom mb-0 text-center">
                     <thead>
                         <tr>
-                            <th rowspan="2" class="align-middle text-nowrap" style="background-color: #1a2332;">ID PASIEN</th>
-                            <th rowspan="2" class="align-middle text-nowrap" style="background-color: #1a2332;">WAKTU KEDATANGAN</th>
-                            <th rowspan="2" class="align-middle text-nowrap" style="background-color: #1a2332;">INTERARRIVAL TIME</th>
-                            <th colspan="4" class="py-3 text-nowrap" style="background-color: #0d9488;">INTERARRIVAL TIME (MASUK STAGE)</th>
-                            <th colspan="5" class="py-3 text-nowrap" style="background-color: #6366f1;">WAITING TIME (MASUK STAGE - MASUK QUEUE)</th>
-                            <th colspan="5" class="py-3 text-nowrap" style="background-color: #1e3a8a;">SERVICE TIME</th>
-                            <th rowspan="2" class="align-middle text-nowrap" style="background-color: #1a2332;">TOTAL TIME</th>
+                            <th rowspan="2" class="align-middle text-nowrap th-neutral">ID PASIEN</th>
+                            <th rowspan="2" class="align-middle text-nowrap th-neutral">WAKTU KEDATANGAN</th>
+                            <th rowspan="2" class="align-middle text-nowrap th-neutral">INTERARRIVAL TIME</th>
+                            <th colspan="4" class="py-3 text-nowrap th-interarrival">INTERARRIVAL TIME (MASUK STAGE)</th>
+                            <th colspan="5" class="py-3 text-nowrap th-waiting">WAITING TIME (MASUK STAGE - MASUK QUEUE)</th>
+                            <th colspan="5" class="py-3 text-nowrap th-service">SERVICE TIME</th>
+                            <th rowspan="2" class="align-middle text-nowrap th-neutral">TOTAL TIME</th>
                         </tr>
                         <tr>
-                            <th class="py-2 px-1 text-nowrap" style="background-color: #14b8a6;">STAGE 1</th>
-                            <th class="py-2 px-1 text-nowrap" style="background-color: #14b8a6;">STAGE 2</th>
-                            <th class="py-2 px-1 text-nowrap" style="background-color: #14b8a6;">STAGE 3</th>
-                            <th class="py-2 px-1 text-nowrap" style="background-color: #14b8a6;">STAGE 4</th>
+                            <th class="py-2 px-1 text-nowrap th-sub-inter">STAGE 1</th>
+                            <th class="py-2 px-1 text-nowrap th-sub-inter">STAGE 2</th>
+                            <th class="py-2 px-1 text-nowrap th-sub-inter">STAGE 3</th>
+                            <th class="py-2 px-1 text-nowrap th-sub-inter">STAGE 4</th>
 
-                            <th class="py-2 px-1 text-nowrap" style="background-color: #818cf8;">STAGE 1</th>
-                            <th class="py-2 px-1 text-nowrap" style="background-color: #818cf8;">STAGE 2</th>
-                            <th class="py-2 px-1 text-nowrap" style="background-color: #818cf8;">STAGE 3</th>
-                            <th class="py-2 px-1 text-nowrap" style="background-color: #818cf8;">STAGE 4</th>
-                            <th class="py-2 px-1 text-nowrap" style="background-color: #4f46e5;">TOTAL WQ</th>
+                            <th class="py-2 px-1 text-nowrap th-sub-waiting">STAGE 1</th>
+                            <th class="py-2 px-1 text-nowrap th-sub-waiting">STAGE 2</th>
+                            <th class="py-2 px-1 text-nowrap th-sub-waiting">STAGE 3</th>
+                            <th class="py-2 px-1 text-nowrap th-sub-waiting">STAGE 4</th>
+                            <th class="py-2 px-1 text-nowrap th-sub-waiting-total">TOTAL WQ</th>
 
-                            <th class="py-2 px-1 text-nowrap" style="background-color: #3b82f6;">STAGE 1</th>
-                            <th class="py-2 px-1 text-nowrap" style="background-color: #3b82f6;">STAGE 2</th>
-                            <th class="py-2 px-1 text-nowrap" style="background-color: #3b82f6;">STAGE 3</th>
-                            <th class="py-2 px-1 text-nowrap" style="background-color: #3b82f6;">STAGE 4</th>
-                            <th class="py-2 px-1 text-nowrap" style="background-color: #2563eb;">TOTAL SRV</th>
+                            <th class="py-2 px-1 text-nowrap th-sub-service">STAGE 1</th>
+                            <th class="py-2 px-1 text-nowrap th-sub-service">STAGE 2</th>
+                            <th class="py-2 px-1 text-nowrap th-sub-service">STAGE 3</th>
+                            <th class="py-2 px-1 text-nowrap th-sub-service">STAGE 4</th>
+                            <th class="py-2 px-1 text-nowrap th-sub-service-total">TOTAL SRV</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white">
@@ -600,21 +656,12 @@ if ($simMax > $simMin && $simMin !== PHP_INT_MAX) {
                         calculate architectural system efficiency.
                     </p>
                 </div>
-                <div class="d-flex gap-3 mt-3 mt-md-0">
-                    <button id="btnResetDes" class="btn text-danger fw-bold shadow-sm"
-                        style="background: white; border: 1px solid #fca5a5; border-radius: 6px; padding: 0.6rem 1.5rem; font-size: 0.85rem; letter-spacing: 1px;">RESET</button>
-                    <button id="btnStartDes"
-                        class="btn btn-primary fw-bold text-white shadow-sm d-flex align-items-center gap-2"
-                        style="border-radius: 6px; padding: 0.6rem 1.5rem; font-size: 0.85rem; letter-spacing: 1px;">
-                        <i class="bi bi-star-fill"></i> START SIMULATION
-                    </button>
-                </div>
             </div>
 
             <div class="row g-4 mb-4">
                 <!-- Left Column: SYSTEM INPUTS -->
                 <div class="col-lg-4">
-                    <div class="report-card report-card-dark p-4 h-100">
+                    <div class="report-card report-card-dark p-4">
                         <h6 class="fw-bold text-dark mb-4 d-flex align-items-center gap-2"
                             style="font-size: 0.85rem; letter-spacing: 1px;">
                             <i class="bi bi-sliders text-primary"></i> SYSTEM INPUTS
@@ -669,7 +716,7 @@ if ($simMax > $simMin && $simMin !== PHP_INT_MAX) {
                                     <div class="text-secondary fw-bold"
                                         style="font-size: 0.55rem; letter-spacing: 1px; margin-bottom: 4px;">ST-3</div>
                                     <input type="number" id="srv3"
-                                        class="form-control border-0 shadow-sm text-center px-1" value="1" min="1">
+                                        class="form-control border-0 shadow-sm text-center px-1" value="2" min="1">
                                 </div>
                                 <div class="text-center w-100">
                                     <div class="text-secondary fw-bold"
@@ -679,17 +726,27 @@ if ($simMax > $simMin && $simMin !== PHP_INT_MAX) {
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Action Buttons -->
+                        <div class="mt-4 pt-3 border-top border-secondary border-opacity-25 d-flex flex-column gap-2">
+                            <button id="btnStartDes" class="btn btn-primary fw-bold text-white shadow-sm d-flex align-items-center justify-content-center gap-2"
+                                style="border-radius: 12px; padding: 0.75rem 1.5rem; font-size: 0.85rem; letter-spacing: 0.5px;">
+                                <i class="bi bi-play-fill fs-5"></i> START SIMULATION
+                            </button>
+                            <button id="btnResetDes" class="btn fw-semibold"
+                                style="border-radius: 12px; padding: 0.75rem 1.5rem; font-size: 0.85rem; letter-spacing: 0.5px; border: 1px solid #334155; color: #94a3b8; background-color: transparent;">RESET</button>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Right Column: Kondisi Awal + DES Results -->
-                <div class="col-lg-8 position-relative">
+                <div class="col-lg-8 position-relative d-flex flex-column">
 
                     <!-- OVERALL SYSTEM METRICS label -->
                     <div class="fw-bold text-secondary text-uppercase mb-3" style="font-size:0.7rem; letter-spacing:1.5px;">OVERALL SYSTEM METRICS</div>
 
                     <!-- 2 cards: Kondisi Awal (kiri) + DES Result (kanan) -->
-                    <div class="row g-3 mb-3">
+                    <div class="row g-3 mb-3 flex-grow-1">
                         <!-- ===== KONDISI AWAL: Overall Metrics ===== -->
                         <div class="col-md-6">
                             <div class="report-card card-green-glow p-4 h-100" style="border: 1px solid #d1fae5; background: linear-gradient(135deg,#f0fdf4 0%,#ffffff 100%);">
@@ -752,7 +809,7 @@ if ($simMax > $simMin && $simMin !== PHP_INT_MAX) {
                     <div class="fw-bold text-secondary text-uppercase mb-3" style="font-size:0.7rem; letter-spacing:1.5px;">PER STAGE PERFORMANCE</div>
 
                     <!-- 2 tables: Kondisi Awal (kiri) + DES Result (kanan) -->
-                    <div class="row g-3 mb-3">
+                    <div class="row g-3 mb-3 flex-grow-1">
                         <!-- ===== KONDISI AWAL: Per Stage ===== -->
                         <div class="col-md-6">
                             <div class="report-card card-green-glow p-4 h-100" style="border: 1px solid #d1fae5; background: linear-gradient(135deg,#f0fdf4 0%,#ffffff 100%);">
