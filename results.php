@@ -158,12 +158,13 @@ if ($simMax > $simMin && $simMin !== PHP_INT_MAX) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="style.css" rel="stylesheet">
     <style>
         body {
-            font-family: 'Inter', system-ui, sans-serif;
-            background-color: #eff6ff;
-            color: #1e293b;
+            font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+            background-color: var(--bg-app);
+            color: var(--text-main);
         }
 
         .table-custom th {
@@ -171,39 +172,55 @@ if ($simMax > $simMin && $simMin !== PHP_INT_MAX) {
             font-weight: 700;
             font-size: 0.75rem;
             letter-spacing: 0.5px;
-            border-color: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.05);
         }
 
         .table-custom td {
             vertical-align: middle;
-            color: #334155;
-            font-size: 0.9rem;
+            color: var(--text-main);
+            font-size: 0.88rem;
             padding: 1rem 0.75rem;
-            border-color: #f1f5f9;
+            border-color: var(--border-color);
         }
 
         .report-card {
-            border-radius: 12px;
+            border-radius: 20px;
             background: white;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-            border: none;
+            box-shadow: var(--card-shadow);
+            border: 1px solid rgba(226, 232, 240, 0.5);
+            transition: var(--transition-smooth);
+        }
+
+        .report-card:hover {
+            box-shadow: var(--card-shadow-hover);
+            transform: translateY(-2px);
         }
 
         .text-purple {
-            color: #8b5cf6 !important;
+            color: var(--primary) !important;
         }
 
         .text-warning-red {
-            color: #ef4444 !important;
+            color: var(--danger) !important;
         }
-
-        /* Simulated warnings for high times */
+        
+        .form-control {
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            padding: 0.75rem 1rem;
+            transition: var(--transition-smooth);
+        }
+        
+        .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15);
+        }
     </style>
 </head>
 
-<body class="bg-light">
+<body class="bg-app">
 
-    <div class="container-fluid py-5 px-md-5" style="max-width: 1400px; background-color: #f8fafc;">
+    <div class="container-fluid py-5 px-md-5" style="max-width: 1400px; background: transparent;">
 
         <!-- Header -->
         <div class="d-flex justify-content-between align-items-start mb-5">
@@ -262,34 +279,31 @@ if ($simMax > $simMin && $simMin !== PHP_INT_MAX) {
                 <table class="table table-custom mb-0 text-center">
                     <thead>
                         <tr>
-                            <th rowspan="2" class="align-middle" style="background-color: #1a2332;">ID<br>PASIEN</th>
-                            <th rowspan="2" class="align-middle" style="background-color: #1a2332;">WAKTU<br>KEDATANGAN
-                            </th>
-                            <th rowspan="2" class="align-middle" style="background-color: #1a2332;">INTERARRIVAL<br>TIME</th>
-                            <th colspan="4" class="py-3" style="background-color: #0d9488;">INTERARRIVAL TIME (MASUK
-                                STAGE)</th>
-                            <th colspan="5" class="py-3" style="background-color: #6366f1;">WAITING TIME (MASUK STAGE -
-                                MASUK QUEUE)</th>
-                            <th colspan="5" class="py-3" style="background-color: #1e3a8a;">SERVICE TIME</th>
-                            <th rowspan="2" class="align-middle" style="background-color: #1a2332;">TOTAL<br>TIME</th>
+                            <th rowspan="2" class="align-middle text-nowrap" style="background-color: #1a2332;">ID PASIEN</th>
+                            <th rowspan="2" class="align-middle text-nowrap" style="background-color: #1a2332;">WAKTU KEDATANGAN</th>
+                            <th rowspan="2" class="align-middle text-nowrap" style="background-color: #1a2332;">INTERARRIVAL TIME</th>
+                            <th colspan="4" class="py-3 text-nowrap" style="background-color: #0d9488;">INTERARRIVAL TIME (MASUK STAGE)</th>
+                            <th colspan="5" class="py-3 text-nowrap" style="background-color: #6366f1;">WAITING TIME (MASUK STAGE - MASUK QUEUE)</th>
+                            <th colspan="5" class="py-3 text-nowrap" style="background-color: #1e3a8a;">SERVICE TIME</th>
+                            <th rowspan="2" class="align-middle text-nowrap" style="background-color: #1a2332;">TOTAL TIME</th>
                         </tr>
                         <tr>
-                            <th class="py-2 px-1" style="background-color: #14b8a6;">STAGE 1</th>
-                            <th class="py-2 px-1" style="background-color: #14b8a6;">STAGE 2</th>
-                            <th class="py-2 px-1" style="background-color: #14b8a6;">STAGE 3</th>
-                            <th class="py-2 px-1" style="background-color: #14b8a6;">STAGE 4</th>
+                            <th class="py-2 px-1 text-nowrap" style="background-color: #14b8a6;">STAGE 1</th>
+                            <th class="py-2 px-1 text-nowrap" style="background-color: #14b8a6;">STAGE 2</th>
+                            <th class="py-2 px-1 text-nowrap" style="background-color: #14b8a6;">STAGE 3</th>
+                            <th class="py-2 px-1 text-nowrap" style="background-color: #14b8a6;">STAGE 4</th>
 
-                            <th class="py-2 px-1" style="background-color: #818cf8;">STAGE 1</th>
-                            <th class="py-2 px-1" style="background-color: #818cf8;">STAGE 2</th>
-                            <th class="py-2 px-1" style="background-color: #818cf8;">STAGE 3</th>
-                            <th class="py-2 px-1" style="background-color: #818cf8;">STAGE 4</th>
-                            <th class="py-2 px-1" style="background-color: #4f46e5;">TOTAL WQ</th>
+                            <th class="py-2 px-1 text-nowrap" style="background-color: #818cf8;">STAGE 1</th>
+                            <th class="py-2 px-1 text-nowrap" style="background-color: #818cf8;">STAGE 2</th>
+                            <th class="py-2 px-1 text-nowrap" style="background-color: #818cf8;">STAGE 3</th>
+                            <th class="py-2 px-1 text-nowrap" style="background-color: #818cf8;">STAGE 4</th>
+                            <th class="py-2 px-1 text-nowrap" style="background-color: #4f46e5;">TOTAL WQ</th>
 
-                            <th class="py-2 px-1" style="background-color: #3b82f6;">STAGE 1</th>
-                            <th class="py-2 px-1" style="background-color: #3b82f6;">STAGE 2</th>
-                            <th class="py-2 px-1" style="background-color: #3b82f6;">STAGE 3</th>
-                            <th class="py-2 px-1" style="background-color: #3b82f6;">STAGE 4</th>
-                            <th class="py-2 px-1" style="background-color: #2563eb;">TOTAL SRV</th>
+                            <th class="py-2 px-1 text-nowrap" style="background-color: #3b82f6;">STAGE 1</th>
+                            <th class="py-2 px-1 text-nowrap" style="background-color: #3b82f6;">STAGE 2</th>
+                            <th class="py-2 px-1 text-nowrap" style="background-color: #3b82f6;">STAGE 3</th>
+                            <th class="py-2 px-1 text-nowrap" style="background-color: #3b82f6;">STAGE 4</th>
+                            <th class="py-2 px-1 text-nowrap" style="background-color: #2563eb;">TOTAL SRV</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white">
@@ -466,16 +480,16 @@ if ($simMax > $simMin && $simMin !== PHP_INT_MAX) {
                     <thead>
                         <tr class="text-secondary fw-bold text-uppercase"
                             style="font-size: 0.65rem; border-bottom: 2px solid #e2e8f0 !important; color: #475569 !important;">
-                            <th class="border-0 pb-3 ps-0 text-start">STAGE</th>
-                            <th class="border-0 pb-3">λI<br><small class="text-muted fw-normal text-capitalize">(Mean Arrival)</small></th>
-                            <th class="border-0 pb-3">σAI<br><small class="text-muted fw-normal text-capitalize">(Std. Dev)</small></th>
-                            <th class="border-0 pb-3">CAI<br><small class="text-muted fw-normal text-capitalize">(CoV)</small></th>
-                            <th class="border-0 pb-3">SI<br><small class="text-muted fw-normal text-capitalize">(Mean Service)</small></th>
-                            <th class="border-0 pb-3">σSI<br><small class="text-muted fw-normal text-capitalize">(Std. Dev)</small></th>
-                            <th class="border-0 pb-3">CSI<br><small class="text-muted fw-normal text-capitalize">(CoV)</small></th>
-                            <th class="border-0 pb-3">ΛI<br><small class="text-muted fw-normal text-capitalize">(Arrival Rate)</small></th>
-                            <th class="border-0 pb-3">PI<br><small class="text-muted fw-normal text-capitalize">(Utilization Factor)</small></th>
-                            <th class="border-0 pb-3 pe-0 text-end">MI<br><small class="text-muted fw-normal text-capitalize">(Service Rate)</small></th>
+                            <th class="border-0 pb-3 ps-0 text-start text-nowrap">STAGE</th>
+                            <th class="border-0 pb-3 text-nowrap">λi<br><small class="text-muted fw-normal text-capitalize">(Mean Arrival)</small></th>
+                            <th class="border-0 pb-3 text-nowrap">σAi<br><small class="text-muted fw-normal text-capitalize">(Std. Dev)</small></th>
+                            <th class="border-0 pb-3 text-nowrap">CAi<br><small class="text-muted fw-normal text-capitalize">(CoV)</small></th>
+                            <th class="border-0 pb-3 text-nowrap">Si<br><small class="text-muted fw-normal text-capitalize">(Mean Service)</small></th>
+                            <th class="border-0 pb-3 text-nowrap">σSi<br><small class="text-muted fw-normal text-capitalize">(Std. Dev)</small></th>
+                            <th class="border-0 pb-3 text-nowrap">CSi<br><small class="text-muted fw-normal text-capitalize">(CoV)</small></th>
+                            <th class="border-0 pb-3 text-nowrap">Λi<br><small class="text-muted fw-normal text-capitalize">(Arrival Rate)</small></th>
+                            <th class="border-0 pb-3 text-nowrap">ρi<br><small class="text-muted fw-normal text-capitalize">(Utilization Factor)</small></th>
+                            <th class="border-0 pb-3 pe-0 text-end text-nowrap">μi<br><small class="text-muted fw-normal text-capitalize">(Service Rate)</small></th>
                         </tr>
                     </thead>
                     <tbody id="actualParamsBody" class="border-top-0">
@@ -684,25 +698,16 @@ if ($simMax > $simMin && $simMin !== PHP_INT_MAX) {
                             <thead>
                                 <tr class="text-secondary fw-bold text-uppercase"
                                     style="font-size: 0.65rem; border-bottom: 2px solid #e2e8f0 !important; color: #475569 !important;">
-                                    <th class="border-0 pb-3 ps-0 text-start">STAGE</th>
-                                    <th class="border-0 pb-3">λI<br><small
-                                            class="text-muted fw-normal text-capitalize">(Mean Arrival)</small></th>
-                                    <th class="border-0 pb-3">σAI<br><small
-                                            class="text-muted fw-normal text-capitalize">(Std. Dev)</small></th>
-                                    <th class="border-0 pb-3">CAI<br><small
-                                            class="text-muted fw-normal text-capitalize">(CoV)</small></th>
-                                    <th class="border-0 pb-3">SI<br><small
-                                            class="text-muted fw-normal text-capitalize">(Mean Service)</small></th>
-                                    <th class="border-0 pb-3">σSI<br><small
-                                            class="text-muted fw-normal text-capitalize">(Std. Dev)</small></th>
-                                    <th class="border-0 pb-3">CSI<br><small
-                                            class="text-muted fw-normal text-capitalize">(CoV)</small></th>
-                                    <th class="border-0 pb-3">ΛI<br><small
-                                            class="text-muted fw-normal text-capitalize">(Arrival Rate)</small></th>
-                                    <th class="border-0 pb-3">PI<br><small
-                                            class="text-muted fw-normal text-capitalize">(Utilization)</small></th>
-                                    <th class="border-0 pb-3 pe-0 text-end">MI<br><small
-                                            class="text-muted fw-normal text-capitalize">(Service Rate)</small></th>
+                                    <th class="border-0 pb-3 ps-0 text-start text-nowrap">STAGE</th>
+                                    <th class="border-0 pb-3 text-nowrap">λi<br><small class="text-muted fw-normal text-capitalize">(Mean Arrival)</small></th>
+                                    <th class="border-0 pb-3 text-nowrap">σAi<br><small class="text-muted fw-normal text-capitalize">(Std. Dev)</small></th>
+                                    <th class="border-0 pb-3 text-nowrap">CAi<br><small class="text-muted fw-normal text-capitalize">(CoV)</small></th>
+                                    <th class="border-0 pb-3 text-nowrap">Si<br><small class="text-muted fw-normal text-capitalize">(Mean Service)</small></th>
+                                    <th class="border-0 pb-3 text-nowrap">σSi<br><small class="text-muted fw-normal text-capitalize">(Std. Dev)</small></th>
+                                    <th class="border-0 pb-3 text-nowrap">CSi<br><small class="text-muted fw-normal text-capitalize">(CoV)</small></th>
+                                    <th class="border-0 pb-3 text-nowrap">Λi<br><small class="text-muted fw-normal text-capitalize">(Arrival Rate)</small></th>
+                                    <th class="border-0 pb-3 text-nowrap">ρi<br><small class="text-muted fw-normal text-capitalize">(Utilization)</small></th>
+                                    <th class="border-0 pb-3 pe-0 text-end text-nowrap">μi<br><small class="text-muted fw-normal text-capitalize">(Service Rate)</small></th>
                                 </tr>
                             </thead>
                             <tbody id="t2Body" class="border-top-0">
@@ -725,19 +730,15 @@ if ($simMax > $simMin && $simMin !== PHP_INT_MAX) {
                             <thead>
                                 <tr class="text-secondary fw-bold text-uppercase"
                                     style="font-size: 0.65rem; border-bottom: 2px solid #e2e8f0 !important; color: #475569 !important;">
-                                    <th class="border-0 pb-3 ps-0 text-start">STAGE</th>
-                                    <th class="border-0 pb-3">WQ<br><small
-                                            class="text-muted fw-normal text-capitalize">(Wait in Queue)</small></th>
-                                    <th class="border-0 pb-3" style="color: #6366f1 !important;">CI (WQ)<br><small class="text-muted fw-normal text-capitalize">(95% Conf)</small></th>
-                                    <th class="border-0 pb-3">LQ<br><small
-                                            class="text-muted fw-normal text-capitalize">(Avg Queue Length)</small></th>
-                                    <th class="border-0 pb-3" style="color: #6366f1 !important;">CI (LQ)<br><small class="text-muted fw-normal text-capitalize">(95% Conf)</small></th>
-                                    <th class="border-0 pb-3">W<br><small
-                                            class="text-muted fw-normal text-capitalize">(Time in System)</small></th>
-                                    <th class="border-0 pb-3" style="color: #6366f1 !important;">CI (W)<br><small class="text-muted fw-normal text-capitalize">(95% Conf)</small></th>
-                                    <th class="border-0 pb-3 pe-0 text-end">L<br><small
-                                            class="text-muted fw-normal text-capitalize">(Avg in System)</small></th>
-                                    <th class="border-0 pb-3 pe-0 text-end" style="color: #6366f1 !important;">CI (L)<br><small class="text-muted fw-normal text-capitalize">(95% Conf)</small></th>
+                                    <th class="border-0 pb-3 ps-0 text-start text-nowrap">STAGE</th>
+                                    <th class="border-0 pb-3 text-nowrap">Wq<br><small class="text-muted fw-normal text-capitalize">(Wait in Queue)</small></th>
+                                    <th class="border-0 pb-3 text-nowrap" style="color: #6366f1 !important;">CI (Wq)<br><small class="text-muted fw-normal text-capitalize">(95% Conf)</small></th>
+                                    <th class="border-0 pb-3 text-nowrap">Lq<br><small class="text-muted fw-normal text-capitalize">(Avg Queue Length)</small></th>
+                                    <th class="border-0 pb-3 text-nowrap" style="color: #6366f1 !important;">CI (Lq)<br><small class="text-muted fw-normal text-capitalize">(95% Conf)</small></th>
+                                    <th class="border-0 pb-3 text-nowrap">W<br><small class="text-muted fw-normal text-capitalize">(Time in System)</small></th>
+                                    <th class="border-0 pb-3 text-nowrap" style="color: #6366f1 !important;">CI (W)<br><small class="text-muted fw-normal text-capitalize">(95% Conf)</small></th>
+                                    <th class="border-0 pb-3 pe-0 text-end text-nowrap">L<br><small class="text-muted fw-normal text-capitalize">(Avg in System)</small></th>
+                                    <th class="border-0 pb-3 pe-0 text-end text-nowrap" style="color: #6366f1 !important;">CI (L)<br><small class="text-muted fw-normal text-capitalize">(95% Conf)</small></th>
                                 </tr>
                             </thead>
                             <tbody id="desStageMetricsBody" class="border-top-0">

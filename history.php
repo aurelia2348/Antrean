@@ -121,21 +121,21 @@ $paginated_sessions = array_slice($sessions, $offset, $limit);
     <aside class="sidebar bg-white border-end d-flex flex-column flex-shrink-0">
         <!-- Brand -->
         <div class="p-4 d-flex align-items-center gap-3">
-            <div class="brand-icon bg-primary text-white rounded d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
-                <i class="bi bi-bar-chart-fill" style="font-size: 1rem;"></i>
+            <div class="brand-icon text-white rounded-3 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                <i class="bi bi-bar-chart-fill" style="font-size: 1.1rem;"></i>
             </div>
-            <h5 class="fw-bold mb-0 text-dark">QueueFlow<br>Pro</h5>
+            <h5 class="fw-bold mb-0 text-dark" style="line-height: 1.2; letter-spacing: -0.5px;">QueueFlow<span class="text-primary">.</span><br><span class="fs-6 fw-semibold text-secondary">Pro Simulation</span></h5>
         </div>
 
         <!-- System Status -->
-        <div class="px-4 py-3 mx-2 bg-light-subtle rounded-3 mb-4 d-flex align-items-center gap-3">
-            <div class="status-icon bg-primary-subtle text-primary rounded d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
-                <i class="bi bi-cpu"></i>
+        <div class="px-4 py-3 mx-3 bg-light rounded-4 mb-4 d-flex align-items-center gap-3 border border-light shadow-sm">
+            <div class="status-icon bg-white text-primary rounded-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 36px; height: 36px; border: 1px solid rgba(79,70,229,0.15);">
+                <i class="bi bi-cpu-fill fs-5"></i>
             </div>
             <div>
-                <small class="text-uppercase text-secondary fw-bold" style="font-size: 0.65rem; letter-spacing: 0.5px;">SYSTEM ARCHITECT</small>
-                <div class="fw-bold text-dark" style="font-size: 0.85rem;">Simulation Engine</div>
-                <div class="text-primary fw-semibold" style="font-size: 0.7rem;">v2.4 Active</div>
+                <small class="text-uppercase text-secondary fw-bold" style="font-size: 0.6rem; letter-spacing: 0.8px;">SYSTEM ENGINE</small>
+                <div class="fw-bold text-dark" style="font-size: 0.8rem; line-height: 1.2;">Simulation Core</div>
+                <div class="text-primary fw-bold" style="font-size: 0.7rem;">v2.4 Active</div>
             </div>
         </div>
 
@@ -173,11 +173,11 @@ $paginated_sessions = array_slice($sessions, $offset, $limit);
                     <h2 class="fw-bold text-dark mb-1">Riwayat Simulasi (Daftar Sesi)</h2>
                     <p class="text-secondary mb-0">Kelola dan tinjau semua rekaman aktivitas simulasi sistem.</p>
                 </div>
-                <div class="d-flex gap-3">
-                    <a href="index.php" class="btn btn-primary fw-bold text-white px-4 py-2 d-flex align-items-center gap-2 shadow-sm rounded-2 border-0">
+                <div class="d-flex gap-3 flex-shrink-0">
+                    <a href="index.php" class="btn btn-primary fw-bold text-white px-4 py-2 d-flex align-items-center gap-2 shadow-sm rounded-2 border-0 text-nowrap">
                         <i class="bi bi-arrow-left"></i> Kembali ke Dasbor
                     </a>
-                    <a href="reset_all.php" class="btn bg-white text-danger fw-bold px-4 py-2 d-flex align-items-center gap-2 shadow-sm rounded-2 border" onclick="return confirm('KOSONGKAN SEMUA DATA?\nAnda yakin ingin menghapus SELURUH riwayat dan mengulang sistem simulasi kembali dari Vaksinasi 1?');">
+                    <a href="reset_all.php" class="btn bg-white text-danger fw-bold px-4 py-2 d-flex align-items-center gap-2 shadow-sm rounded-2 border text-nowrap" onclick="return confirm('KOSONGKAN SEMUA DATA?\nAnda yakin ingin menghapus SELURUH riwayat dan mengulang sistem simulasi kembali dari Vaksinasi 1?');">
                         <i class="bi bi-arrow-clockwise"></i> Reset Sistem Global
                     </a>
                 </div>
@@ -230,7 +230,7 @@ $paginated_sessions = array_slice($sessions, $offset, $limit);
                             <?php else: ?>
                                 <?php foreach($paginated_sessions as $s): ?>
                                     <tr>
-                                        <td class="px-4 py-4 border-light">
+                                        <td class="px-4 py-4 border-light text-nowrap">
                                             <span class="text-primary fw-bold"><?php echo htmlspecialchars($s['name']); ?></span>
                                         </td>
                                         <td class="px-4 py-4 border-light text-dark fw-medium">
@@ -248,8 +248,8 @@ $paginated_sessions = array_slice($sessions, $offset, $limit);
                                             <?php echo $s['patient_count']; ?>
                                         </td>
                                         <td class="px-4 py-4 border-light text-center">
-                                            <div class="d-flex justify-content-center align-items-center gap-3">
-                                                <a href="results.php?session=<?php echo urlencode($s['id']); ?>" class="btn btn-sm shadow-none text-decoration-none" style="background-color: #e0f2fe; color: #0284c7; font-weight: 600; border-radius: 20px; padding: 6px 16px; font-size: 0.8rem;">
+                                            <div class="d-flex justify-content-center align-items-center gap-3 text-nowrap">
+                                                <a href="results.php?session=<?php echo urlencode($s['id']); ?>" class="btn btn-sm shadow-none text-decoration-none text-nowrap" style="background-color: #e0f2fe; color: #0284c7; font-weight: 600; border-radius: 20px; padding: 6px 16px; font-size: 0.8rem;">
                                                     Lihat Hasil Simulasi <i class="bi bi-arrow-right ms-1 fw-bold"></i>
                                                 </a>
                                                 <form method="POST" action="delete.php" class="m-0" onsubmit="return confirm('HAPUS DATA?\nApakah Anda yakin ingin menghapus Riwayat Simulasi ini? Semua data pasien di sesi ini akan hangus dan tidak dapat dikembalikan.');">

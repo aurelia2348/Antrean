@@ -23,56 +23,68 @@ class QueueSimulation {
         return names[i - 1] || "Stage";
     }
 
+    getStageIcon(i) {
+        const icons = [
+            "bi-person-badge",
+            "bi-speedometer2",
+            "bi-clipboard2-pulse",
+            "bi-capsule-raw"
+        ];
+        return icons[i - 1] || "bi-grid";
+    }
+
     initUI() {
         this.stagesContainer.innerHTML = '';
         for (let i = 1; i <= this.totalStages; i++) {
             const card = document.createElement('div');
-            card.className = 'card border-0 shadow-sm rounded-4 mb-4 stage-card position-relative overflow-hidden bg-white';
+            card.className = 'card border-0 stage-card bg-white h-100 d-flex flex-column';
+            card.style.width = '300px';
+            card.style.flexShrink = '0';
             card.innerHTML = `
                 <!-- Header -->
                 <div class="d-flex justify-content-between align-items-center px-4 pt-4 pb-3">
-                    <h6 class="fw-bold mb-0 text-dark">Tahap ${i}: ${this.getStageName(i)}</h6>
-                    <span id="badge-status-${i}" class="badge rounded-pill bg-secondary text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.5px;">IDLE</span>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; border: 1px solid rgba(79,70,229,0.15);">
+                            <i class="bi ${this.getStageIcon(i)} fs-5"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.95rem; letter-spacing: -0.2px;">Tahap ${i}</h6>
+                            <small class="text-secondary fw-semibold" style="font-size: 0.75rem;">${this.getStageName(i)}</small>
+                        </div>
+                    </div>
+                    <span id="badge-status-${i}" class="badge rounded-pill text-uppercase px-3 py-2" style="font-size: 0.6rem; letter-spacing: 0.7px;">IDLE</span>
                 </div>
 
                 <!-- Body -->
-                <div class="row px-4 pb-3 gx-3">
+                <div class="d-flex flex-column gap-3 flex-grow-1 justify-content-center px-4 pb-3">
                     <!-- Queue Box -->
-                    <div class="col-6">
-                        <div class="metric-box">
-                            <div class="metric-label">QUEUE</div>
-                            <div id="queue-display-${i}" class="metric-value-queue d-flex flex-wrap justify-content-center align-items-center" style="min-height: 48px;">
-                                <span class="text-secondary opacity-25">-</span>
-                            </div>
+                    <div class="metric-box py-3">
+                        <div class="metric-label">QUEUE</div>
+                        <div id="queue-display-${i}" class="metric-value-queue d-flex flex-wrap justify-content-center align-items-center gap-1" style="min-height: 48px;">
+                            <span class="text-secondary opacity-25">-</span>
                         </div>
                     </div>
                     
                     <!-- Stage Box -->
-                    <div class="col-6">
-                        <div id="stage-box-${i}" class="metric-box transition-all">
-                            <div class="metric-label">STAGE</div>
-                            <div id="stage-display-${i}" class="metric-value-stage d-flex flex-wrap justify-content-center align-items-center" style="min-height: 48px;">
-                                <span class="text-secondary opacity-25">-</span>
-                            </div>
+                    <div id="stage-box-${i}" class="metric-box py-3 transition-all">
+                        <div class="metric-label">STAGE</div>
+                        <div id="stage-display-${i}" class="metric-value-stage d-flex flex-wrap justify-content-center align-items-center" style="min-height: 48px;">
+                            <span class="text-secondary opacity-25">-</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Footer Buttons -->
-                <div class="row px-4 pb-4 gx-3">
+                <div class="d-flex gap-2 px-4 pb-4 mt-auto">
                     ${i > 1 ? `
-                    <div class="col-${i === 4 ? '12' : '6'}">
-                        <button id="btn-keluar-${i}" class="btn btn-light w-100 fw-bold text-secondary text-uppercase py-2 shadow-sm" style="font-size: 0.85rem;" onclick="sim.leaveStage(${i}, false)">
-                            Keluar
-                        </button>
-                    </div>
+                    <button id="btn-keluar-${i}" class="btn btn-light flex-grow-1 fw-bold text-secondary text-uppercase py-2 shadow-sm text-nowrap" style="font-size: 0.8rem;" onclick="sim.leaveStage(${i}, false)">
+                        Keluar
+                    </button>
                     ` : ''}
                     ${i < 4 ? `
-                    <div class="col-${i === 1 ? '12' : '6'}">
-                        <button id="btn-lanjut-${i}" class="btn btn-primary w-100 fw-bold text-uppercase py-2 shadow-sm" style="font-size: 0.85rem;" onclick="sim.leaveStage(${i}, true)">
-                            Lanjut
-                        </button>
-                    </div>
+                    <button id="btn-lanjut-${i}" class="btn btn-primary flex-grow-1 fw-bold text-uppercase py-2 shadow-sm text-nowrap" style="font-size: 0.8rem;" onclick="sim.leaveStage(${i}, true)">
+                        Lanjut
+                    </button>
                     ` : ''}
                 </div>
             `;
