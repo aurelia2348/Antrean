@@ -86,10 +86,68 @@ body {
 }
 
 /* Top Header */
-.top-header {
-    background-color: rgba(255, 255, 255, 0.8) !important;
+.top-header-bar {
+    height: 64px;
+    background: rgba(255, 255, 255, 0.92);
     backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    padding: 0 1.75rem;
+    gap: 1rem;
+    flex-shrink: 0;
+}
+.th-page-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #64748b;
+    flex: 1;
+}
+.th-icon-btn {
+    width: 38px;
+    height: 38px;
+    border: none;
+    background: transparent;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+.th-icon-btn:hover { background: #f1f5f9; color: #4f46e5; }
+.th-divider {
+    width: 1px;
+    height: 30px;
+    background: #e2e8f0;
+    margin: 0 0.35rem;
+    flex-shrink: 0;
+}
+.th-user-area {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    cursor: pointer;
+    padding: 0.3rem 0.65rem;
+    border-radius: 12px;
+    transition: background 0.2s;
+}
+.th-user-area:hover { background: #f1f5f9; }
+.th-user-info { text-align: right; line-height: 1.25; }
+.th-user-name { font-size: 0.82rem; font-weight: 700; color: #0f172a; }
+.th-user-role { font-size: 0.6rem; font-weight: 600; color: #94a3b8; letter-spacing: 0.8px; text-transform: uppercase; }
+.th-avatar {
+    width: 36px; height: 36px; border-radius: 10px;
+    object-fit: cover; border: 2px solid #e0e7ff; flex-shrink: 0;
+}
+.th-avatar-fallback {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 0.9rem; font-weight: 700; flex-shrink: 0;
 }
 
 .icon-link-hover:hover {
@@ -296,3 +354,116 @@ body {
 .stages-column, .log-column, .container-fluid {
     animation: fadeInUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
+
+/* ===== SHARED TOP NAVIGATION BAR ===== */
+.top-header-bar {
+    height: 64px;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    padding: 0 1.75rem;
+    gap: 1rem;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.th-page-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #64748b;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.th-icon-btn {
+    width: 38px;
+    height: 38px;
+    border: none;
+    background: transparent;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    text-decoration: none;
+}
+
+.th-icon-btn:hover {
+    background: #f1f5f9;
+    color: var(--primary);
+}
+
+.th-divider {
+    width: 1px;
+    height: 30px;
+    background: #e2e8f0;
+    margin: 0 0.35rem;
+    flex-shrink: 0;
+}
+
+.th-user-area {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    cursor: pointer;
+    padding: 0.3rem 0.65rem;
+    border-radius: 12px;
+    transition: background 0.2s;
+}
+
+.th-user-area:hover {
+    background: #f1f5f9;
+}
+
+.th-user-info {
+    text-align: right;
+    line-height: 1.25;
+}
+
+.th-user-name {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.th-user-role {
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: #94a3b8;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+}
+
+.th-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    object-fit: cover;
+    border: 2px solid #e0e7ff;
+    flex-shrink: 0;
+}
+
+.th-avatar-fallback {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--primary-gradient);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+

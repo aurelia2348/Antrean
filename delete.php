@@ -1,8 +1,7 @@
 <?php
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['session_id'])) {
     $target_id = intval($_POST['session_id']);
-    
-    // 1. Mark as deleted
+
     $deleted_file = 'deleted_sessions.json';
     $deleted = [];
     if (file_exists($deleted_file)) {
@@ -16,7 +15,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['session_id'])) {
         file_put_contents($deleted_file, json_encode($deleted));
     }
     
-    // 2. Remove from results.json
     $results_file = 'results.json';
     if (file_exists($results_file)) {
         $content = file_get_contents($results_file);
@@ -29,13 +27,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['session_id'])) {
                     $filtered[] = $user;
                 }
             }
-            // Reindex array by ignoring keys
             $filtered = array_values($filtered);
             file_put_contents($results_file, json_encode($filtered, JSON_PRETTY_PRINT));
         }
     }
 }
 
-// Redirect back to the history page
 header("Location: history.php");
 exit;

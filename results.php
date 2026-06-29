@@ -160,7 +160,60 @@ if ($simMax > $simMin && $simMin !== PHP_INT_MAX) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <!-- Custom CSS -->
     <link href="style.css" rel="stylesheet">
-    <style>
+     <style>
+        /* ===== PAGE CONTENT ===== */
+        .history-content {
+            padding: 1.75rem 2rem;
+        }
+
+        /* Breadcrumb */
+        .h-breadcrumb { font-size: 0.78rem; margin-bottom: 0.85rem; }
+        .h-breadcrumb a { color: #6366f1; text-decoration: none; font-weight: 500; }
+        .h-breadcrumb a:hover { text-decoration: underline; }
+        .h-breadcrumb .sep { margin: 0 0.4rem; color: #94a3b8; }
+        .h-breadcrumb .current { color: #6366f1; font-weight: 600; }
+
+        /* Summary Cards (history-style) */
+        .sum-card-avg {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            border-radius: 20px; padding: 1.5rem; position: relative; overflow: hidden;
+            color: white; box-shadow: 0 8px 24px rgba(99,102,241,0.35);
+            cursor: pointer; transition: transform 0.25s cubic-bezier(0.4,0,0.2,1), box-shadow 0.25s;
+            border: 1px solid transparent; height: 100%;
+        }
+        .sum-card-avg::before { content: ''; position: absolute; right: -18px; bottom: -22px; width: 100px; height: 100px; border-radius: 50%; background: rgba(255,255,255,0.08); }
+        .sum-card-avg::after { content: ''; position: absolute; right: 28px; bottom: 10px; width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.06); }
+        .sum-card-avg:hover { transform: translateY(-5px); box-shadow: 0 16px 36px rgba(99,102,241,0.45); }
+        .sum-card-avg:active { transform: translateY(-2px) scale(0.98); }
+        .sum-card-avg .bg-icon { position: absolute; right: 1.1rem; bottom: 0.6rem; font-size: 3.6rem; color: rgba(255,255,255,0.13); line-height: 1; pointer-events: none; }
+        .sum-card-avg .sc-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 1.5px; opacity: 0.85; margin-bottom: 0.5rem; text-transform: uppercase; }
+        .sum-card-avg .sc-value { font-size: 2.6rem; font-weight: 800; line-height: 1; margin-bottom: 0.5rem; letter-spacing: -1.5px; }
+        .sum-card-avg .sc-trend { font-size: 0.7rem; opacity: 0.85; display: flex; align-items: center; gap: 0.3rem; }
+
+        .sum-card-white {
+            background: white; border-radius: 20px; padding: 1.5rem;
+            border: 1px solid #f1f5f9; box-shadow: 0 4px 20px rgba(0,0,0,0.05); overflow: hidden;
+            cursor: pointer; transition: transform 0.25s cubic-bezier(0.4,0,0.2,1), box-shadow 0.25s, border-color 0.25s;
+            height: 100%;
+        }
+        .sum-card-white:hover { transform: translateY(-5px); box-shadow: 0 14px 32px rgba(59,130,246,0.13); border-color: #bfdbfe; }
+        .sum-card-white:active { transform: translateY(-2px) scale(0.98); }
+        .sum-card-white .sc-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.9rem; }
+        .sum-card-white .sc-icon {
+            width: 44px; height: 44px; border-radius: 13px;
+            background: linear-gradient(135deg, #fde68a, #f59e0b);
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 1.15rem; box-shadow: 0 4px 14px rgba(245,158,11,0.32);
+        }
+        .sum-card-white .sc-tag { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.9px; color: #94a3b8; text-transform: uppercase; }
+        .sum-card-white .sc-value { font-size: 2.1rem; font-weight: 800; color: #0f172a; margin-bottom: 0.2rem; letter-spacing: -1px; line-height: 1; }
+        .sum-card-white .sc-sub { font-size: 0.72rem; color: #94a3b8; font-style: italic; }
+
+        /* Page Header */
+        .h-page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; }
+        .h-page-title { font-size: 1.65rem; font-weight: 800; color: #0f172a; letter-spacing: -0.5px; margin-bottom: 0.35rem; }
+        .h-page-subtitle { color: #6366f1; font-size: 0.83rem; font-weight: 500; max-width: 600px; line-height: 1.5; }
+
         body {
             font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
             background-color: var(--bg-app);
@@ -356,46 +409,119 @@ if ($simMax > $simMin && $simMin !== PHP_INT_MAX) {
 
 <body class="bg-app">
 
-    <div class="container-fluid py-5 px-md-5" style="max-width: 1400px; background: transparent;">
+<div class="d-flex vw-100 vh-100 overflow-hidden">
 
-        <!-- Header -->
-        <div class="d-flex justify-content-between align-items-start mb-5">
-            <div>
-                <div class="text-uppercase fw-bold text-secondary mb-2"
-                    style="font-size: 0.7rem; letter-spacing: 1.5px;">REPORTS <i class="bi bi-chevron-right mx-1"></i>
-                    SIMULATION RESULTS</div>
-                <h1 class="fw-bold mb-3" style="font-size: 2.5rem; letter-spacing: -1px;">Hasil Simulasi <span
-                        class="text-primary">(Vaksinasi
-                        #<?php echo isset($targetSession) ? $targetSession : 1; ?>)</span></h1>
-                <p class="text-secondary mb-0" style="max-width: 600px;">Detailed breakdown of patient queue dynamics
-                    across multiple service stages. Optimized for bottleneck identification and throughput analysis.</p>
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="sidebar bg-white border-end d-flex flex-column flex-shrink-0">
+        <!-- Brand -->
+        <div class="p-4 d-flex align-items-center gap-3">
+            <div class="brand-icon text-white rounded-3 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                <i class="bi bi-bar-chart-fill" style="font-size: 1.1rem;"></i>
             </div>
-            <a href="history.php"
-                class="btn btn-light shadow-sm text-primary fw-bold px-4 py-2 d-flex align-items-center gap-2"
-                style="border-radius: 8px;">
-                <i class="bi bi-arrow-left"></i> Kembali ke Riwayat
+            <h5 class="fw-bold mb-0 text-dark" style="line-height: 1.2; letter-spacing: -0.5px;">QueueFlow<span class="text-primary">.</span><br><span class="fs-6 fw-semibold text-secondary">Pro Simulation</span></h5>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="nav flex-column gap-2 px-3 fw-semibold mt-2">
+            <a href="index.php" class="nav-link text-secondary rounded-1 d-flex align-items-center gap-3 py-3 px-3">
+                <i class="bi bi-grid-1x2-fill"></i> DASHBOARD
+            </a>
+            <a href="history.php" class="nav-link active rounded-1 d-flex align-items-center gap-3 py-3 px-3">
+                <i class="bi bi-clock-history"></i> HISTORY
+            </a>
+            <a href="analysis.php" class="nav-link text-secondary rounded-1 d-flex align-items-center gap-3 py-3 px-3">
+                <i class="bi bi-bar-chart-line-fill"></i> ANALYSIS
+            </a>
+        </nav>
+
+        <!-- Bottom Nav -->
+        <div class="mt-auto border-top mx-3 mb-3 pt-3">
+            <a href="index.php" class="btn btn-primary w-100 fw-bold d-flex align-items-center justify-content-center gap-2 mb-4 py-2">
+                <i class="bi bi-plus-lg"></i> New Simulation
+            </a>
+            <a href="#" class="nav-link text-secondary rounded-1 d-flex align-items-center gap-3 px-3 py-2 fw-semibold">
+                <i class="bi bi-gear-fill"></i> SETTINGS
             </a>
         </div>
+    </aside>
+
+    <!-- ===== RIGHT SIDE: Top Nav + Main Content ===== -->
+    <div class="d-flex flex-column flex-grow-1 overflow-hidden">
+
+        <!-- TOP NAVIGATION BAR -->
+        <div class="top-header-bar">
+            <!-- Page Title -->
+            <div class="th-page-label">Hasil Simulasi - Detail Rekaman Sesi Vaksinasi #<?php echo isset($targetSession) ? $targetSession : 1; ?></div>
+
+            <!-- Actions -->
+            <div class="d-flex align-items-center gap-1">
+                <button class="th-icon-btn" title="Notifikasi">
+                    <i class="bi bi-bell"></i>
+                </button>
+                <button class="th-icon-btn" title="Riwayat">
+                    <i class="bi bi-clock-history"></i>
+                </button>
+                <div class="th-divider"></div>
+                <div class="th-user-area">
+                    <div class="th-user-info">
+                        <div class="th-user-name">Admin Utama</div>
+                        <div class="th-user-role">Administrator</div>
+                    </div>
+                    <img src="admin_avatar.png" alt="Admin" class="th-avatar"
+                         onerror="this.outerHTML='<div class=&quot;th-avatar-fallback&quot;>A</div>'">
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN SCROLLABLE CONTENT -->
+        <main class="flex-grow-1 overflow-auto bg-app">
+            <div class="history-content">
+
+                <!-- Breadcrumb -->
+                <div class="h-breadcrumb">
+                    <a href="index.php">Dashboard</a>
+                    <span class="sep">›</span>
+                    <a href="history.php">Riwayat Simulasi</a>
+                    <span class="sep">›</span>
+                    <span class="current">Hasil Simulasi (Vaksinasi #<?php echo isset($targetSession) ? $targetSession : 1; ?>)</span>
+                </div>
+
+                <!-- Page Header -->
+                <div class="h-page-header">
+                    <div>
+                        <h1 class="h-page-title">Hasil Simulasi <span class="text-primary">(Vaksinasi #<?php echo isset($targetSession) ? $targetSession : 1; ?>)</span></h1>
+                        <p class="h-page-subtitle">Detailed breakdown of patient queue dynamics across multiple service stages. Optimized for bottleneck identification and throughput analysis.</p>
+                    </div>
+                    <a href="history.php" class="btn btn-light shadow-sm text-primary fw-bold px-4 py-2 d-flex align-items-center gap-2" style="border-radius: 10px; border: 1px solid var(--border-color); font-size: 0.82rem; text-decoration: none; align-self: flex-start; height: 38px;">
+                        <i class="bi bi-arrow-left"></i> Kembali ke Riwayat
+                    </a>
+                </div>
 
         <!-- Summary Cards -->
         <div class="row g-4 mb-5">
-            <!-- Card 1 -->
+            <!-- Card 1: Total Patients (gradient) -->
             <div class="col-md-3">
-                <div class="report-card p-4">
-                    <div class="text-secondary fw-bold text-uppercase mb-2"
-                        style="font-size: 0.65rem; letter-spacing: 1.5px;">TOTAL PATIENTS</div>
-                    <div class="fw-bold text-dark" style="font-size: 2.5rem; line-height: 1;">
-                        <?php echo $totalPatients; ?></div>
+                <div class="sum-card-avg">
+                    <div class="sc-label">Total Patients</div>
+                    <div class="sc-value"><?php echo $totalPatients; ?></div>
+                    <div class="sc-trend">
+                        <i class="bi bi-people-fill"></i>
+                        <span>Pasien tercatat dalam sesi ini</span>
+                    </div>
+                    <div class="bg-icon"><i class="bi bi-person-lines-fill"></i></div>
                 </div>
             </div>
-            <!-- Card 2 -->
+            <!-- Card 2: Simulation Time (white card) -->
             <div class="col-md-3">
-                <div class="report-card p-4">
-                    <div class="text-secondary fw-bold text-uppercase mb-2"
-                        style="font-size: 0.65rem; letter-spacing: 1.5px; color: #2563eb !important;">SIMULATION TIME
+                <div class="sum-card-white">
+                    <div class="sc-top">
+                        <div class="sc-icon">
+                            <i class="bi bi-stopwatch-fill"></i>
+                        </div>
+                        <div class="sc-tag">Durasi Simulasi</div>
                     </div>
-                    <div class="fw-bold text-dark" style="font-size: 2.5rem; line-height: 1;"><?php echo $simTimeStr; ?>
-                    </div>
+                    <div class="sc-value"><?php echo $simTimeStr; ?></div>
+                    <div class="sc-sub">Total waktu proses dari awal hingga akhir</div>
                 </div>
             </div>
         </div>
@@ -616,7 +742,7 @@ if ($simMax > $simMin && $simMin !== PHP_INT_MAX) {
                     <thead>
                         <tr class="text-secondary fw-bold text-uppercase"
                             style="font-size: 0.65rem; border-bottom: 2px solid #e2e8f0 !important; color: #475569 !important;">
-                            <th class="border-0 pb-3 ps-0 text-start text-nowrap">STAGE</th>
+                            <th class="border-0 pb-3 text-nowrap">STAGE</th>
                             <th class="border-0 pb-3 text-nowrap">λi<br><small class="text-muted fw-normal text-capitalize">(Mean Arrival)</small></th>
                             <th class="border-0 pb-3 text-nowrap">σAi<br><small class="text-muted fw-normal text-capitalize">(Std. Dev)</small></th>
                             <th class="border-0 pb-3 text-nowrap">CAi<br><small class="text-muted fw-normal text-capitalize">(CoV)</small></th>
@@ -625,7 +751,7 @@ if ($simMax > $simMin && $simMin !== PHP_INT_MAX) {
                             <th class="border-0 pb-3 text-nowrap">CSi<br><small class="text-muted fw-normal text-capitalize">(CoV)</small></th>
                             <th class="border-0 pb-3 text-nowrap">Λi<br><small class="text-muted fw-normal text-capitalize">(Arrival Rate)</small></th>
                             <th class="border-0 pb-3 text-nowrap">ρi<br><small class="text-muted fw-normal text-capitalize">(Utilization Factor)</small></th>
-                            <th class="border-0 pb-3 pe-0 text-end text-nowrap">μi<br><small class="text-muted fw-normal text-capitalize">(Service Rate)</small></th>
+                            <th class="border-0 pb-3 text-nowrap">μi<br><small class="text-muted fw-normal text-capitalize">(Service Rate)</small></th>
                         </tr>
                     </thead>
                     <tbody id="actualParamsBody" class="border-top-0">
@@ -660,8 +786,8 @@ if ($simMax > $simMin && $simMin !== PHP_INT_MAX) {
 
             <div class="row g-4 mb-4">
                 <!-- Left Column: SYSTEM INPUTS -->
-                <div class="col-lg-4">
-                    <div class="report-card report-card-dark p-4">
+                <div class="col-lg-4 d-flex flex-column">
+                    <div class="report-card report-card-dark p-4 h-100 d-flex flex-column">
                         <h6 class="fw-bold text-dark mb-4 d-flex align-items-center gap-2"
                             style="font-size: 0.85rem; letter-spacing: 1px;">
                             <i class="bi bi-sliders text-primary"></i> SYSTEM INPUTS
@@ -728,7 +854,7 @@ if ($simMax > $simMin && $simMin !== PHP_INT_MAX) {
                         </div>
 
                         <!-- Action Buttons -->
-                        <div class="mt-4 pt-3 border-top border-secondary border-opacity-25 d-flex flex-column gap-2">
+                        <div class="mt-auto pt-3 border-top border-secondary border-opacity-25 d-flex flex-column gap-2">
                             <button id="btnStartDes" class="btn btn-primary fw-bold text-white shadow-sm d-flex align-items-center justify-content-center gap-2"
                                 style="border-radius: 12px; padding: 0.75rem 1.5rem; font-size: 0.85rem; letter-spacing: 0.5px;">
                                 <i class="bi bi-play-fill fs-5"></i> START SIMULATION
@@ -904,7 +1030,7 @@ if ($simMax > $simMin && $simMin !== PHP_INT_MAX) {
                             <thead>
                                 <tr class="text-secondary fw-bold text-uppercase"
                                     style="font-size: 0.65rem; border-bottom: 2px solid #e2e8f0 !important; color: #475569 !important;">
-                                    <th class="border-0 pb-3 ps-0 text-start text-nowrap">STAGE</th>
+                                    <th class="border-0 pb-3 text-nowrap">STAGE</th>
                                     <th class="border-0 pb-3 text-nowrap">λi<br><small class="text-muted fw-normal text-capitalize">(Mean Arrival)</small></th>
                                     <th class="border-0 pb-3 text-nowrap">σAi<br><small class="text-muted fw-normal text-capitalize">(Std. Dev)</small></th>
                                     <th class="border-0 pb-3 text-nowrap">CAi<br><small class="text-muted fw-normal text-capitalize">(CoV)</small></th>
@@ -913,7 +1039,7 @@ if ($simMax > $simMin && $simMin !== PHP_INT_MAX) {
                                     <th class="border-0 pb-3 text-nowrap">CSi<br><small class="text-muted fw-normal text-capitalize">(CoV)</small></th>
                                     <th class="border-0 pb-3 text-nowrap">Λi<br><small class="text-muted fw-normal text-capitalize">(Arrival Rate)</small></th>
                                     <th class="border-0 pb-3 text-nowrap">ρi<br><small class="text-muted fw-normal text-capitalize">(Utilization)</small></th>
-                                    <th class="border-0 pb-3 pe-0 text-end text-nowrap">μi<br><small class="text-muted fw-normal text-capitalize">(Service Rate)</small></th>
+                                    <th class="border-0 pb-3 text-nowrap">μi<br><small class="text-muted fw-normal text-capitalize">(Service Rate)</small></th>
                                 </tr>
                             </thead>
                             <tbody id="t2Body" class="border-top-0">
@@ -936,15 +1062,15 @@ if ($simMax > $simMin && $simMin !== PHP_INT_MAX) {
                             <thead>
                                 <tr class="text-secondary fw-bold text-uppercase"
                                     style="font-size: 0.65rem; border-bottom: 2px solid #e2e8f0 !important; color: #475569 !important;">
-                                    <th class="border-0 pb-3 ps-0 text-start text-nowrap">STAGE</th>
+                                    <th class="border-0 pb-3 text-nowrap">STAGE</th>
                                     <th class="border-0 pb-3 text-nowrap">Wq<br><small class="text-muted fw-normal text-capitalize">(Wait in Queue)</small></th>
                                     <th class="border-0 pb-3 text-nowrap" style="color: #6366f1 !important;">CI (Wq)<br><small class="text-muted fw-normal text-capitalize">(95% Conf)</small></th>
                                     <th class="border-0 pb-3 text-nowrap">Lq<br><small class="text-muted fw-normal text-capitalize">(Avg Queue Length)</small></th>
                                     <th class="border-0 pb-3 text-nowrap" style="color: #6366f1 !important;">CI (Lq)<br><small class="text-muted fw-normal text-capitalize">(95% Conf)</small></th>
                                     <th class="border-0 pb-3 text-nowrap">W<br><small class="text-muted fw-normal text-capitalize">(Time in System)</small></th>
                                     <th class="border-0 pb-3 text-nowrap" style="color: #6366f1 !important;">CI (W)<br><small class="text-muted fw-normal text-capitalize">(95% Conf)</small></th>
-                                    <th class="border-0 pb-3 pe-0 text-end text-nowrap">L<br><small class="text-muted fw-normal text-capitalize">(Avg in System)</small></th>
-                                    <th class="border-0 pb-3 pe-0 text-end text-nowrap" style="color: #6366f1 !important;">CI (L)<br><small class="text-muted fw-normal text-capitalize">(95% Conf)</small></th>
+                                    <th class="border-0 pb-3 text-nowrap">L<br><small class="text-muted fw-normal text-capitalize">(Avg in System)</small></th>
+                                    <th class="border-0 pb-3 text-nowrap" style="color: #6366f1 !important;">CI (L)<br><small class="text-muted fw-normal text-capitalize">(95% Conf)</small></th>
                                 </tr>
                             </thead>
                             <tbody id="desStageMetricsBody" class="border-top-0">
@@ -953,6 +1079,20 @@ if ($simMax > $simMin && $simMin !== PHP_INT_MAX) {
                         </table>
                     </div>
                 </div>
+
+                <!-- SCENARIO COMPARISON CHARTS -->
+                <div id="desScenarioSection" class="mt-5 report-card p-4 p-md-5" style="border:1px solid #e2e8f0;background:#ffffff;">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <div style="width:4px;height:28px;background:linear-gradient(180deg,#6366f1,#a78bfa);border-radius:2px;"></div>
+                        <h6 class="fw-bold text-dark mb-0 text-uppercase" style="font-size:0.85rem;letter-spacing:1.5px;">
+                            <i class="bi bi-bar-chart-steps text-primary me-1"></i> Scenario Comparison — Overall System Metrics
+                        </h6>
+                        <span class="badge ms-2" style="background:#e0e7ff;color:#3730a3;font-size:0.65rem;letter-spacing:1px;">AKTUAL vs DES</span>
+                    </div>
+                    <p class="text-secondary mb-4" style="font-size:0.75rem;padding-left:6px;">Setiap kali simulasi dijalankan, skenario baru ditambahkan. Tekan RESET untuk memulai ulang.</p>
+                    <div id="desScenarioCards" class="d-flex flex-column gap-4"></div>
+                </div>
+                <!-- END SCENARIO COMPARISON CHARTS -->
 
                 <!-- Insight Alert -->
                 <div class="p-4 rounded-4 shadow-sm mb-4" style="background-color: #f8fafc; border: 1px solid #e2e8f0;">
@@ -1010,7 +1150,10 @@ if ($simMax > $simMin && $simMin !== PHP_INT_MAX) {
             </div>
 
         </div>
+            </div>
+        </main>
     </div>
+</div>
 
     <style>
         .animate-fade-in {
@@ -1076,6 +1219,7 @@ if ($simMax > $simMin && $simMin !== PHP_INT_MAX) {
         });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="des.js"></script>
 
 </body>

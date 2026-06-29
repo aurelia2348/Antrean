@@ -5,6 +5,11 @@ let serviceTimes = { 1: [], 2: [], 3: [], 4: [] };
 let probNext = { 2: 1, 3: 1, 4: 1 };
 let desSessionData = null;
 
+// Scenario comparison state
+let _scenarioCount = 0;
+let _actualOverallMetrics = { Wq: 0, W: 0, Lq: 0, L: 0 };
+let _scenarioCharts = []; // track Chart.js instances for cleanup
+
 // Helper to convert to Minutes for metric consistency
 const toMin = ms => ms / 60000;
 
@@ -96,16 +101,11 @@ function runDES() {
     setTimeout(() => {
         let totalCustomers = warmup + obs;
 
-        // 1. Simulate Kondisi Awal (serversCount = 1 for all stages)
-        let initServersCount = { 1: 1, 2: 1, 3: 1, 4: 1 };
-        let initConfig = { warmup, obs, totalCustomers, quota: 0, serversCount: initServersCount };
-        let repMetricsInit = [];
-        for (let r = 0; r < reps; r++) {
-            repMetricsInit.push(simOneRep(initConfig));
-        }
-        let initialMetrics = averageRepMetrics(repMetricsInit, reps);
+        // Kondisi Awal: perhitungan deterministik langsung dari data aktual sesi
+        // (tidak ada randomness — server & quota dari input dipakai untuk hitung rho)
+        if (desSessionData) renderActualMetrics(desSessionData, serversCount, quota);
 
-        // 2. Simulate Hasil DES (user-defined serversCount)
+        // Simulate Hasil DES (user-defined serversCount, dengan reps/warmup/obs)
         let config = { warmup, obs, totalCustomers, quota, serversCount };
         let repMetricsDes = [];
         for (let r = 0; r < reps; r++) {
@@ -113,9 +113,8 @@ function runDES() {
         }
         let finalMetrics = averageRepMetrics(repMetricsDes, reps);
 
-        // Render both
-        renderDESResults(finalMetrics);
-        renderInitialDESResults(initialMetrics);
+        // Render Hasil DES
+        renderDESResults(finalMetrics, { reps, warmup, obs, quota, serversCount });
 
         btn.innerHTML = `🌟 Start Simulation`;
         btn.disabled = false;
@@ -504,7 +503,7 @@ function getCVClass(cv) {
     return 'text-success fw-bold';
 }
 
-function renderDESResults(metrics) {
+function renderDESResults(metrics, simParams) {
     let _rc = document.getElementById('desResultsContainer');
     if (_rc) _rc.classList.remove('d-none');
 
@@ -601,6 +600,15 @@ function renderDESResults(metrics) {
             warnDiv.classList.add('d-none');
         }
     }
+
+    // Add new scenario comparison chart
+    _scenarioCount++;
+    addScenarioChart(_scenarioCount, simParams, _actualOverallMetrics, {
+        Wq: metrics.Wq,
+        W:  metrics.W,
+        Lq: metrics.Lq,
+        L:  metrics.L
+    });
 }
 
 function resetDES() {
@@ -624,6 +632,13 @@ function resetDES() {
 
     let btm = document.getElementById('desBottomContainer');
     if (btm) btm.classList.add('d-none');
+
+    // Destroy all scenario charts and clear cards
+    _scenarioCharts.forEach(ch => { try { ch.destroy(); } catch(e){} });
+    _scenarioCharts = [];
+    _scenarioCount = 0;
+    let scCards = document.getElementById('desScenarioCards');
+    if (scCards) scCards.innerHTML = '';
 
     // Reset Hasil DES card values to placeholder
     let elSysWq = document.getElementById('sysWq');
@@ -673,7 +688,341 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btnResetDes').addEventListener('click', resetDES);
 });
 
-function renderActualMetrics(sessionData) {
+function renderDESCharts(metrics) {
+    const labels = ['Tahap 1', 'Tahap 2', 'Tahap 3', 'Tahap 4'];
+
+    // Helper: parse CI string "lower , upper" -> {lo, hi}
+    function parseCI(ciStr) {
+        if (!ciStr) return { lo: 0, hi: 0 };
+        let parts = ciStr.split(',');
+        return {
+            lo: parseFloat(parts[0]) || 0,
+            hi: parseFloat(parts[1]) || 0
+        };
+    }
+
+    // Helper: build a beautiful bar chart with CI shaded band
+    function buildChart(canvasId, storageKey, meanVals, ciLos, ciHis, color, bgColor, unit) {
+        if (window[storageKey]) {
+            window[storageKey].destroy();
+            window[storageKey] = null;
+        }
+        const ctx = document.getElementById(canvasId);
+        if (!ctx) return;
+
+        // Build error bar data as custom plugin overlay instead of separate datasets
+        // We'll use 3 datasets: CI upper band (fill to lower), mean bars, CI lower band
+        const ciUpperFill = ciHis;
+        const ciLowerFill = ciLos;
+
+        window[storageKey] = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [
+                    // CI upper (transparent, just for fill reference)
+                    {
+                        label: '95% CI Upper',
+                        data: ciUpperFill,
+                        backgroundColor: 'transparent',
+                        borderColor: 'transparent',
+                        borderWidth: 0,
+                        type: 'line',
+                        fill: '+1',
+                        backgroundColor: bgColor,
+                        pointRadius: 0,
+                        order: 3,
+                        tension: 0.3
+                    },
+                    // CI lower (transparent fill base)
+                    {
+                        label: '95% CI Lower',
+                        data: ciLowerFill,
+                        backgroundColor: 'transparent',
+                        borderColor: 'transparent',
+                        borderWidth: 0,
+                        type: 'line',
+                        fill: false,
+                        pointRadius: 0,
+                        order: 3,
+                        tension: 0.3
+                    },
+                    // Mean bar
+                    {
+                        label: 'Mean ' + unit,
+                        data: meanVals,
+                        backgroundColor: color.replace(')', ', 0.85)').replace('rgb', 'rgba'),
+                        borderColor: color,
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        borderSkipped: false,
+                        type: 'bar',
+                        order: 1,
+                        barPercentage: 0.55,
+                        categoryPercentage: 0.7
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#1e293b',
+                        titleColor: '#f1f5f9',
+                        bodyColor: '#cbd5e1',
+                        padding: 12,
+                        cornerRadius: 10,
+                        callbacks: {
+                            label: function(ctx2) {
+                                let idx = ctx2.dataIndex;
+                                if (ctx2.datasetIndex === 2) {
+                                    return ` Mean: ${meanVals[idx].toFixed(4)} ${unit}`;
+                                }
+                                if (ctx2.datasetIndex === 0) {
+                                    return ` CI: [${ciLowerFill[idx].toFixed(4)}, ${ciUpperFill[idx].toFixed(4)}]`;
+                                }
+                                return null;
+                            },
+                            filter: function(item) {
+                                return item.datasetIndex !== 1; // hide CI lower from tooltip dupe
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        border: { display: false },
+                        ticks: {
+                            color: '#64748b',
+                            font: { size: 11, weight: '600' }
+                        }
+                    },
+                    y: {
+                        grid: {
+                            color: 'rgba(148,163,184,0.15)',
+                            lineWidth: 1
+                        },
+                        border: { display: false, dash: [4, 4] },
+                        ticks: {
+                            color: '#64748b',
+                            font: { size: 10 },
+                            maxTicksLimit: 6,
+                            callback: function(val) {
+                                return val.toFixed(2);
+                            }
+                        },
+                        beginAtZero: true
+                    }
+                },
+                animation: {
+                    duration: 700,
+                    easing: 'easeInOutQuart'
+                }
+            }
+        });
+    }
+
+    // Collect data per metric
+    let wqMeans = [], wqLos = [], wqHis = [];
+    let lqMeans = [], lqLos = [], lqHis = [];
+    let wMeans  = [], wLos  = [], wHis  = [];
+    let lMeans  = [], lLos  = [], lHis  = [];
+
+    for (let i = 1; i <= 4; i++) {
+        let s = metrics.stages[i];
+        wqMeans.push(parseFloat(s.Wq) || 0);
+        let ciWq = parseCI(s.ciWq); wqLos.push(ciWq.lo); wqHis.push(ciWq.hi);
+
+        lqMeans.push(parseFloat(s.Lq) || 0);
+        let ciLq = parseCI(s.ciLq); lqLos.push(ciLq.lo); lqHis.push(ciLq.hi);
+
+        wMeans.push(parseFloat(s.W) || 0);
+        let ciW = parseCI(s.ciW); wLos.push(ciW.lo); wHis.push(ciW.hi);
+
+        lMeans.push(parseFloat(s.L) || 0);
+        let ciL = parseCI(s.ciL); lLos.push(ciL.lo); lHis.push(ciL.hi);
+    }
+
+    buildChart('chartWq', '_chartWq', wqMeans, wqLos, wqHis, 'rgb(99,102,241)',  'rgba(99,102,241,0.12)',  'min');
+    buildChart('chartLq', '_chartLq', lqMeans, lqLos, lqHis, 'rgb(59,130,246)',  'rgba(59,130,246,0.12)',  'cust');
+    buildChart('chartW',  '_chartW',  wMeans,  wLos,  wHis,  'rgb(16,185,129)',  'rgba(16,185,129,0.12)',  'min');
+    buildChart('chartL',  '_chartL',  lMeans,  lLos,  lHis,  'rgb(245,158,11)',  'rgba(245,158,11,0.12)',  'cust');
+}
+
+// ============================================================
+// SCENARIO COMPARISON CHART
+// ============================================================
+function addScenarioChart(num, params, actual, des) {
+    const container = document.getElementById('desScenarioCards');
+    if (!container) return;
+
+    // Palette per skenario (cycling) — TIDAK menggunakan hijau (#10b981)
+    // karena hijau sudah dipakai untuk bar Aktual
+    const palettes = [
+        { border: '#6366f1', bg: 'rgba(99,102,241,0.82)' },   // indigo
+        { border: '#f59e0b', bg: 'rgba(245,158,11,0.82)' },   // amber
+        { border: '#ef4444', bg: 'rgba(239,68,68,0.82)' },    // red
+        { border: '#8b5cf6', bg: 'rgba(139,92,246,0.82)' },   // violet
+        { border: '#06b6d4', bg: 'rgba(6,182,212,0.82)' },    // cyan
+        { border: '#ec4899', bg: 'rgba(236,72,153,0.82)' },   // pink
+        { border: '#f97316', bg: 'rgba(249,115,22,0.82)' },   // orange
+        { border: '#0ea5e9', bg: 'rgba(14,165,233,0.82)' },   // sky
+    ];
+    const pal = palettes[(num - 1) % palettes.length];
+
+    // Build params info HTML
+    const srvStr = params
+        ? `ST-1:${params.serversCount[1]} · ST-2:${params.serversCount[2]} · ST-3:${params.serversCount[3]} · ST-4:${params.serversCount[4]}`
+        : '—';
+    const paramItems = params ? [
+        { label: 'REPS', val: params.reps },
+        { label: 'WARMUP', val: params.warmup },
+        { label: 'OBS', val: params.obs },
+        { label: 'QUOTA/JAM', val: params.quota || 'Unlimited' },
+        { label: 'SERVER', val: srvStr },
+    ] : [];
+
+    const paramHtml = paramItems.map(p =>
+        `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 14px;display:flex;flex-direction:column;gap:2px;">
+            <div style="font-size:0.58rem;font-weight:700;letter-spacing:1px;color:#94a3b8;text-transform:uppercase;">${p.label}</div>
+            <div style="font-size:0.82rem;font-weight:700;color:#1e293b;">${p.val}</div>
+        </div>`
+    ).join('');
+
+    // Unique canvas IDs
+    const canvasTimeId = `scChart_time_${num}`;
+    const canvasQueueId = `scChart_queue_${num}`;
+
+    // Create card
+    const card = document.createElement('div');
+    card.className = 'p-4 rounded-4 animate-fade-in mb-4';
+    card.style.cssText = `border:1px solid #e2e8f0;background:#f8fafc;`;
+    card.innerHTML = `
+        <!-- Scenario Header -->
+        <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+            <div style="background:${pal.border};color:#fff;font-size:0.65rem;font-weight:800;letter-spacing:2px;padding:6px 14px;border-radius:20px;text-transform:uppercase;">
+                Skenario ${num}
+            </div>
+            <div style="font-size:0.82rem;font-weight:600;color:#475569;">Overall System Metrics — Aktual vs DES</div>
+            <span style="font-size:0.68rem;color:#94a3b8;margin-left:auto;">Simulasi #${num}</span>
+        </div>
+
+        <!-- Params Row -->
+        ${params ? `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px;">${paramHtml}</div>` : ''}
+
+        <!-- 2-column: Time chart + Queue chart -->
+        <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:0;align-items:stretch;">
+            <!-- Time Metrics: Wq & W -->
+            <div style="padding-right:28px;">
+                <div style="font-size:0.7rem;font-weight:700;color:#64748b;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">
+                    ⏱ Time Metrics (min) — Wq & W
+                </div>
+                <div style="position:relative;height:220px;">
+                    <canvas id="${canvasTimeId}"></canvas>
+                </div>
+            </div>
+            <!-- Vertical Divider -->
+            <div style="width:1px;background:linear-gradient(180deg,transparent 0%,#e2e8f0 15%,#e2e8f0 85%,transparent 100%);margin:0 4px;"></div>
+            <!-- Queue Metrics: Lq & L -->
+            <div style="padding-left:28px;">
+                <div style="font-size:0.7rem;font-weight:700;color:#64748b;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">
+                    👥 Queue Length (cust) — Lq & L
+                </div>
+                <div style="position:relative;height:220px;">
+                    <canvas id="${canvasQueueId}"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div style="display:flex;gap:20px;margin-top:16px;font-size:0.7rem;color:#64748b;">
+            <span>
+                <span style="display:inline-block;width:14px;height:10px;background:rgba(16,185,129,0.8);border-radius:3px;vertical-align:middle;margin-right:4px;"></span>
+                Aktual
+            </span>
+            <span>
+                <span style="display:inline-block;width:14px;height:10px;background:${pal.bg};border-radius:3px;vertical-align:middle;margin-right:4px;"></span>
+                DES Skenario ${num}
+            </span>
+        </div>
+    `;
+    container.appendChild(card);
+
+    // Build time chart: Wq & W
+    const chartTimeCtx = document.getElementById(canvasTimeId);
+    const chartQueueCtx = document.getElementById(canvasQueueId);
+
+    const commonOptions = (unit) => ({
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: '#1e293b',
+                titleColor: '#f1f5f9',
+                bodyColor: '#cbd5e1',
+                padding: 12,
+                cornerRadius: 10,
+                callbacks: {
+                    label: ctx => ` ${ctx.dataset.label}: ${Number(ctx.raw).toFixed(4)} ${unit}`
+                }
+            }
+        },
+        scales: {
+            x: { grid: { display: false }, border: { display: false },
+                 ticks: { color: '#64748b', font: { size: 11, weight: '600' } } },
+            y: { grid: { color: 'rgba(148,163,184,0.15)' }, border: { display: false },
+                 ticks: { color: '#64748b', font: { size: 10 }, maxTicksLimit: 6,
+                          callback: v => v.toFixed(2) },
+                 beginAtZero: true }
+        },
+        animation: { duration: 650, easing: 'easeInOutQuart' }
+    });
+
+    const makeGrouped = (ctx, labels, datasets, unit) => new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: datasets.map(d => ({
+                ...d,
+                borderRadius: 7,
+                borderSkipped: false,
+                barPercentage: 0.6,
+                categoryPercentage: 0.75
+            }))
+        },
+        options: commonOptions(unit)
+    });
+
+    const chTime = makeGrouped(chartTimeCtx,
+        ['Wq', 'W'],
+        [
+            { label: 'Aktual',           data: [actual.Wq, actual.W], backgroundColor: 'rgba(16,185,129,0.82)', borderColor: '#10b981', borderWidth: 2 },
+            { label: `DES Skenario ${num}`, data: [des.Wq,    des.W],    backgroundColor: pal.bg,                borderColor: pal.border, borderWidth: 2 }
+        ],
+        'min'
+    );
+
+    const chQueue = makeGrouped(chartQueueCtx,
+        ['Lq', 'L'],
+        [
+            { label: 'Aktual',           data: [actual.Lq, actual.L], backgroundColor: 'rgba(16,185,129,0.82)', borderColor: '#10b981', borderWidth: 2 },
+            { label: `DES Skenario ${num}`, data: [des.Lq,    des.L],    backgroundColor: pal.bg,                borderColor: pal.border, borderWidth: 2 }
+        ],
+        'cust'
+    );
+
+    _scenarioCharts.push(chTime, chQueue);
+}
+
+function renderActualMetrics(sessionData, serversCount, quota) {
+    // Gunakan serversCount dari input jika tersedia, default ke 1
+    serversCount = serversCount || { 1: 1, 2: 1, 3: 1, 4: 1 };
     let actuals = {};
     for (let stage = 1; stage <= 4; stage++) {
         let inters = [];
@@ -713,7 +1062,7 @@ function renderActualMetrics(sessionData) {
             CSi: meanSi > 0 ? (stdSi / meanSi) : 0,
             lambda: lambda,
             mu: mu,
-            rho: mu > 0 ? (lambda / (1 * mu)) : 0 // User requested Server 1 for actual
+            rho: mu > 0 ? (lambda / ((serversCount[stage] || 1) * mu)) : 0 // Gunakan server input
         };
     }
 
@@ -798,6 +1147,9 @@ function renderActualMetrics(sessionData) {
     let lam1 = actuals[1].lambda;
     let initLq = lam1 * initWq;
     let initL  = lam1 * initW;
+
+    // Simpan ke global agar bisa diakses skenario chart
+    _actualOverallMetrics = { Wq: initWq, W: initW, Lq: initLq, L: initL };
 
     let elIWq = document.getElementById('initWq');
     let elIW  = document.getElementById('initW');

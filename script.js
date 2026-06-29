@@ -28,7 +28,7 @@ class QueueSimulation {
             "bi-person-badge",
             "bi-speedometer2",
             "bi-clipboard2-pulse",
-            "bi-capsule-raw"
+            "bi-capsule"
         ];
         return icons[i - 1] || "bi-grid";
     }
@@ -70,12 +70,12 @@ class QueueSimulation {
                 <!-- Actions -->
                 <div class="d-flex flex-column gap-2 ms-3 justify-content-center" style="width: 130px; flex-shrink: 0;">
                     ${i < 4 ? `
-                    <button id="btn-lanjut-${i}" class="btn btn-primary w-100 fw-bold text-uppercase py-2 shadow-sm text-nowrap" style="font-size: 0.75rem;" onclick="sim.leaveStage(${i}, true)">
+                    <button id="btn-lanjut-${i}" class="btn btn-lanjut-style w-100 py-2 text-nowrap" style="font-size: 0.75rem;" onclick="sim.leaveStage(${i}, true)">
                         Lanjut
                     </button>
                     ` : ''}
                     ${i > 1 ? `
-                    <button id="btn-keluar-${i}" class="btn btn-light w-100 fw-bold text-secondary text-uppercase py-2 shadow-sm text-nowrap" style="font-size: 0.75rem;" onclick="sim.leaveStage(${i}, false)">
+                    <button id="btn-keluar-${i}" class="btn btn-keluar-style w-100 py-2 text-nowrap" style="font-size: 0.75rem;" onclick="sim.leaveStage(${i}, false)">
                         Keluar
                     </button>
                     ` : ''}
